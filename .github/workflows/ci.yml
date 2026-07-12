@@ -42,4 +42,4 @@ jobs:
       - name: Check out the code under review
         uses: actions/checkout@v7
       - name: Run the preflight gate
-        run: 'echo "::error::milestone-bootstrapper: this command is [TBD] — record it in .milestone-config/driver.json and re-run apply/update." && exit 1'
+        run: 'python3 scripts/validate-plugin-structure.py'
