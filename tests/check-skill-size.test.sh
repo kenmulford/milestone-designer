@@ -110,7 +110,7 @@ assert_exit "under-ceiling -> exit 0" 0 "$CODE"
 repo="$(mk_repo)"
 run_gate "$repo"
 assert_exit "empty-glob (no SKILL.md) -> exit 0" 0 "$CODE"
-assert_contains "empty-glob prints the no-files notice" "$OUT" "no skills/*/SKILL.md files found"
+assert_contains "empty-glob prints the no-files notice" "$OUT" "no skills/**/SKILL.md files found"
 
 # --- Case 3: whole-file over ceiling fail -----------------------------------
 repo="$(mk_repo)"
@@ -144,6 +144,16 @@ run_gate "$repo"
 assert_exit "block-scalar description over ceiling -> exit 1" 1 "$CODE"
 assert_contains "names the offending file" "$OUT" "skills/block-desc/SKILL.md"
 assert_contains "names the description ceiling" "$OUT" "description: word count"
+
+# --- Case 7: nested skill over ceiling (proves recursive skills/**/ scope) ---
+# A SKILL.md two levels deep (skills/group/name/SKILL.md) must be found and
+# failed — the one-level skills/*/SKILL.md glob would miss it entirely.
+repo="$(mk_repo)"
+write_skill "$repo" "group/nested-big" "small description" "$(gen_words 2600)"
+run_gate "$repo"
+assert_exit "nested skill over ceiling -> exit 1" 1 "$CODE"
+assert_contains "names the nested offending file" "$OUT" "skills/group/nested-big/SKILL.md"
+assert_contains "names the whole-file ceiling" "$OUT" "whole-file word count"
 
 # --- summary -----------------------------------------------------------------
 echo ""
