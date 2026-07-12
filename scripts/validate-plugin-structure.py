@@ -13,7 +13,9 @@ It checks:
   2. .claude-plugin/marketplace.json — parses as JSON, has required keys
                                        `name` and `plugins` (a non-empty list).
   3. Every skills/**/SKILL.md and agents/**/*.md  — opens with a `---`-fenced
-     frontmatter block carrying non-empty `name` and `description`. Every
+     frontmatter block carrying non-empty `name` and `description`; files under
+     a dot-named directory at any depth are skipped (parity with the shell size
+     gates' pruned file set). Every
      commands/**/*.md is required to carry a non-empty `description` — command
      frontmatter is OPTIONAL to Claude Code (a command file loads without any
      frontmatter, and its name comes from its filename), so `description` here
@@ -23,11 +25,12 @@ It checks:
      unquoted plain scalar may carry a colon+space, or a bare trailing colon,
      that Claude Desktop's strict YAML loader would reject (see the strict-scalar
      note below).
-  4. Size budgets — every governed skills/**/SKILL.md stays at or under its own
-     per-file word-count ceiling (SKILL_WORD_CEILINGS below), and every
-     agents/**/*.md frontmatter `description` stays at or under a flat 150-word
-     ceiling. A written size standard with no gate is how a governed file
-     silently regrows past its target.
+  4. Size budget — every agents/**/*.md frontmatter `description` stays at or
+     under a flat 150-word ceiling (a written size standard with no gate is how
+     a governed file silently regrows past its target). Skill-size governance
+     (SKILL.md word ceilings) is NOT owned here: per issue #13 the flat shell
+     gate scripts/check-skill-size.{sh,ps1} is its single owner, covering every
+     skills/**/SKILL.md at any depth. This gate governs only agent descriptions.
 
 Two readers, two rules (read before "upgrading" this):
   Claude Code's frontmatter reader is tolerant — it takes everything after the
@@ -66,11 +69,11 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-# Size-budget ceilings (the ratchet discipline is documented in the size-budget
-# section below). Defined up here so the agent-description ceiling is enforced
-# in the SAME section-3 agent walk (one rglob, one parse per agent file) rather
-# than a second walk that double-reported fence errors and over-counted.
-SKILL_WORD_CEILINGS: dict[str, int] = {}
+# Agent-description size budget. Defined up here so the ceiling is enforced in
+# the SAME section-3 agent walk (one rglob, one parse per agent file) rather than
+# a second walk that would double-report fence errors and over-count. Skill word
+# ceilings are NOT enforced by this gate: per issue #13 the flat shell gate
+# scripts/check-skill-size.{sh,ps1} is the single owner of skill-size governance.
 AGENT_DESCRIPTION_WORD_CEILING = 150
 
 errors: list[str] = []
@@ -84,6 +87,18 @@ def err(path: Path, msg: str) -> None:
 
 def warn(path: Path, msg: str) -> None:
     warnings.append(f"{path.relative_to(REPO_ROOT)}: {msg}")
+
+
+def _under_dot_dir(path: Path) -> bool:
+    """True if any DIRECTORY component of `path` (relative to REPO_ROOT) is
+    dot-named. Mirrors the shell size gates' `-name '.*' -type d -prune`: a
+    governed file under a dot-named directory at any depth is skipped, so the
+    validator's rglob walks and the shell gates cover the SAME file set (they
+    diverged on skills/.hidden/** before this filter — the shell gates pruned it,
+    rglob descended into it). The filename itself is not a directory component,
+    so a leading-dot file (none exist today) is unaffected.
+    """
+    return any(part.startswith(".") for part in path.relative_to(REPO_ROOT).parts[:-1])
 
 
 def load_json(path: Path) -> dict | None:
@@ -354,8 +369,12 @@ if mj is not None:
 
 # --- 3: skill / agent / command frontmatter (single walk each) --------------
 
-# Skills: every skills/**/SKILL.md — require name + description.
+# Skills: every skills/**/SKILL.md — require name + description. Dot-named
+# directories are pruned to match the shell size gates' file set (parity: both
+# gates must govern exactly the same SKILL.md files).
 for skill_md in sorted((REPO_ROOT / "skills").rglob("SKILL.md")):
+    if _under_dot_dir(skill_md):
+        continue
     checked += 1
     fm = parse_frontmatter(skill_md)
     if fm is not None:
@@ -367,6 +386,8 @@ for skill_md in sorted((REPO_ROOT / "skills").rglob("SKILL.md")):
 agents_dir = REPO_ROOT / "agents"
 if agents_dir.is_dir():
     for agent_md in sorted(agents_dir.rglob("*.md")):
+        if _under_dot_dir(agent_md):
+            continue
         checked += 1
         fm = parse_frontmatter(agent_md)
         if fm is not None:
@@ -388,6 +409,8 @@ if agents_dir.is_dir():
 commands_dir = REPO_ROOT / "commands"
 if commands_dir.is_dir():
     for cmd_md in sorted(commands_dir.rglob("*.md")):
+        if _under_dot_dir(cmd_md):
+            continue
         checked += 1
         fm = parse_frontmatter(cmd_md)
         if fm is not None:
@@ -396,55 +419,13 @@ if commands_dir.is_dir():
             # skills'/agents', so the strict-scalar rule governs it too.
             check_strict_scalars(cmd_md)
 
-# --- 4: size budgets ---------------------------------------------------------
-#
-# Why this exists: a written size STANDARD with no enforcing GATE is exactly
-# what lets a governed SKILL.md regrow past its own stated target — this check
-# is the gate that protects the standard. (The agents/**/*.md description
-# ceiling is enforced in the section-3 agent walk above, reusing that walk's
-# single parse per file; only the SKILL.md ceilings are enforced here.)
-#
-# Ceiling discipline (documented, not machine-enforced):
-#   - SKILL_WORD_CEILINGS values ONLY GO DOWN, NEVER UP. When a skill is added,
-#     seed its ceiling at the file's actual word count plus ~5% headroom, rounded
-#     to a clean number. Raising one requires a recorded decision on the issue
-#     that grows the file.
-#   - A skills/**/SKILL.md not named in SKILL_WORD_CEILINGS is not yet governed
-#     by this check — it is silently unchecked until a ceiling is added for it (a
-#     deliberate scope choice: an ungoverned file has no ceiling to violate).
-#   - A path NAMED in SKILL_WORD_CEILINGS but absent from disk (renamed or deleted
-#     without updating this table) IS a failure, never a silent pass. This is why
-#     the loop below iterates SKILL_WORD_CEILINGS itself, not a glob.
-#
-# This repo ships no skills yet, so SKILL_WORD_CEILINGS (defined at the top of
-# this file) is empty; a skill added in a later issue lands its ceiling there in
-# the same change.
-#
-# Measurement: whole-file word count (`len(text.split())`, identical to `wc -w`)
-# for every governed SKILL.md.
-
-for rel_path, ceiling in sorted(SKILL_WORD_CEILINGS.items()):
-    skill_md = REPO_ROOT / rel_path
-    checked += 1
-    if not skill_md.is_file():
-        err(
-            skill_md,
-            f"is listed in SKILL_WORD_CEILINGS ({ceiling}-word ceiling) "
-            f"but is missing from disk — a renamed or deleted governed "
-            f"file must update this table in the same change, not "
-            f"silently drop out of the size-budget gate",
-        )
-        continue
-    word_count = len(skill_md.read_text(encoding="utf-8-sig").split())
-    if word_count > ceiling:
-        err(
-            skill_md,
-            f"is {word_count} words, over its {ceiling}-word "
-            f"size-budget ceiling (SKILL_WORD_CEILINGS in this script) "
-            f"— trim it, or if the growth is deliberate, record a "
-            f"decision on the issue that grows it and raise the "
-            f"ceiling in the same change",
-        )
+# Note: skill-size governance (SKILL.md word ceilings) is intentionally NOT
+# enforced here. Per issue #13 the flat shell gate scripts/check-skill-size.{sh,
+# ps1} is the single owner of that concern — it holds every skills/**/SKILL.md at
+# any depth to a whole-file and a description word ceiling. The only size budget
+# this structure gate owns is the agents/**/*.md description ceiling, enforced
+# inline in the section-3 agent walk above (reusing that walk's single parse per
+# file).
 
 # --- report -----------------------------------------------------------------
 

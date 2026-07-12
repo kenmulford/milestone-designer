@@ -107,7 +107,7 @@ try {
     $repo = New-TempRepo
     $r = Invoke-Gate $repo
     Assert-Exit 'empty-glob (no SKILL.md) -> exit 0' 0 $r.Code
-    Assert-Contains 'empty-glob prints the no-files notice' $r.Output 'no skills/*/SKILL.md files found'
+    Assert-Contains 'empty-glob prints the no-files notice' $r.Output 'no skills/**/SKILL.md files found'
 
     # --- Case 3: whole-file over ceiling fail -------------------------------
     $repo = New-TempRepo
@@ -141,6 +141,16 @@ try {
     Assert-Exit 'block-scalar description over ceiling -> exit 1' 1 $r.Code
     Assert-Contains 'names the offending file' $r.Output 'skills/block-desc/SKILL.md'
     Assert-Contains 'names the description ceiling' $r.Output 'description: word count'
+
+    # --- Case 7: nested skill over ceiling (proves recursive skills/**/ scope) ---
+    # A SKILL.md two levels deep (skills/group/name/SKILL.md) must be found and
+    # failed — the one-level skills/*/SKILL.md scope would miss it entirely.
+    $repo = New-TempRepo
+    Write-Skill $repo 'group/nested-big' 'small description' (Get-Words 2600)
+    $r = Invoke-Gate $repo
+    Assert-Exit 'nested skill over ceiling -> exit 1' 1 $r.Code
+    Assert-Contains 'names the nested offending file' $r.Output 'skills/group/nested-big/SKILL.md'
+    Assert-Contains 'names the whole-file ceiling' $r.Output 'whole-file word count'
 } finally {
     if (Test-Path -LiteralPath $script:TmpRoot) {
         Remove-Item -LiteralPath $script:TmpRoot -Recurse -Force -ErrorAction SilentlyContinue
