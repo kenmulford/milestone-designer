@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "milestone-designer",
+  "owner": {
+    "name": "Ken Mulford",
+    "email": "ken@kenmulford.com"
+  },
+  "metadata": {
+    "description": "Pre-plan design phase for Claude Code — reads a feature brief, maps the screens, flows, and states it implies, and produces lo-fi wireframes plus a design spec the milestone suite grounds on."
+  },
+  "plugins": [
+    {
+      "source": "./",
+      "name": "milestone-designer",
+      "description": "The milestone-suite's pre-plan design phase: reads a feature brief, maps the screens/flows/states it implies, surfaces UX gaps before decomposition, and produces lo-fi wireframes plus a design spec that milestone-feeder, milestone-driver, and the coherence-reviewer ground on.",
+      "category": "development",
+      "tags": ["claude-code", "plugin", "milestones", "design", "wireframes", "ux", "pre-plan", "automation"]
+    }
+  ]
+}
