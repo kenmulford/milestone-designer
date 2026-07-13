@@ -1,0 +1,33 @@
+name: Release CI
+
+# Release gate for PRs into main. NOT emitted by milestone-bootstrapper — this
+# file is hand-maintained (the emitter owns ci.yml, which gates PRs into
+# develop and never fires on main-targeted PRs; that mismatch deadlocked the
+# first release PR, #31). The job name below ("skill-size") is the
+# required-status-check context registered in main's branch protection.
+#
+# Deliberately minimal (operator decision, 2026-07-13): everything merging to
+# main has already passed the full unit-tests + preflight gates on its way
+# into develop, so the release gate re-proves only the skill-size ceilings on
+# the release diff itself.
+
+on:
+  pull_request:
+    branches: ['main']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  skill-size:
+    name: skill-size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code under review
+        uses: actions/checkout@v7
+      - name: Run the skill-size gate
+        run: './scripts/check-skill-size.sh'
