@@ -24,11 +24,11 @@ Designing before the architect decomposes is the whole point: wireframing *after
 
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 900}} }%%
-flowchart LR
+flowchart TD
     brief[/"your brief — a file, a few<br/>lines, or an epic issue #"/]
 
     subgraph pipe ["the suite pipeline — milestone-designer is the new pre-plan stage"]
-        direction LR
+        direction TB
         subgraph sgD ["design — brief → committed design (NEW)"]
             direction TB
             d1["ux-architect maps<br/>screens · flows · states,<br/>audits UX gaps"] --> d2["wireframers draft one<br/>lo-fi HTML screen each<br/>(rolling cap 4)"] --> d3["assemble spec.md<br/>+ screens/*.html"] --> d4["local review<br/>checkpoint — you approve"]
