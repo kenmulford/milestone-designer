@@ -55,4 +55,18 @@ Satisfaction is defined by the committed files alone — never by which design t
 
 ## Idempotent re-runs
 
-Re-running `design` against an **unchanged brief is a diff-shown no-op** (brief:29): a **per-screen diff is shown before any overwrite**, and no artifact is overwritten silently (`.project/design-philosophy.md#Error & failure philosophy` — "Re-runs are idempotent: per-screen diff shown before any overwrite").
+Re-running `design` against an **unchanged brief is a diff-shown no-op** (brief:29): a **per-screen diff is shown before any overwrite**, and no artifact is overwritten silently (`.project/design-philosophy.md#Error & failure philosophy` — "Re-runs are idempotent: per-screen diff shown before any overwrite"). **On a re-run** the diff is surfaced at the human-review checkpoint and the artifact dir is written **only** on Approved; a **first run** has nothing to diff and writes directly (below). This mirrors the feeder `update` skill's diff-before-PATCH ethos (brief:29). Mechanics: `skills/design/SKILL.md` Steps 5–6.
+
+**First run — plain write, no diff.** When no `<designDocsDir>/<slug>/` tree exists there is nothing to diff against: the run writes `spec.md` + `screens/*.html` directly. This is the ordinary first-design path — the diff step is skipped entirely, and it is **not** an error.
+
+**Re-run — diff before any overwrite.** When the tree exists, the rule applies once to **each existing artifact file** — `spec.md` and every `screens/<screen-slug>.html`. For each, before writing it the skill reads the existing file and compares it to the freshly regenerated content (it MAY probe readability as early as the slug is known; the halt below fires no later than this pre-write diff):
+
+| Case | Behavior |
+|---|---|
+| Regenerated content **identical** to the existing file | Report **"no changes"** for that artifact; perform **no write**. |
+| Regenerated content **differs** | **Hold** the write; carry the diff (old vs newly generated) to the Step 6 checkpoint. The file is overwritten **only** if carried forward through Approved — a changed `spec.md` writes on the **same** approval as the changed screens. |
+| Existing file **cannot be read** (permissions error / non-UTF-8 content) | **Halt before writing that artifact** and report a clear error **naming the file** — never a silent overwrite, never a silent skip. This is the fail-closed side of the "diff shown before any overwrite" invariant, owned by `.project/design-philosophy.md#Error & failure philosophy`. |
+
+**Zero-writes no-op.** When an unchanged brief regenerates every artifact byte-identical to its committed file, every one reports "no changes" and the run performs **zero writes** (brief:99, `.project/design-philosophy.md#Testing philosophy`).
+
+**Held content lives outside the artifact dir.** Pre-approval, the held regenerated artifacts (changed `screens/*.html` and a changed `spec.md`) live in transient per-run scratch **outside** the artifact set, under the design skill's own self-ignoring per-run scratch `.milestone-designer/` (established at `skills/design/SKILL.md` Step 3), never as a partial overwrite of `<designDocsDir>/<slug>/`. The artifact dir is touched only at approval, so a run abandoned at the checkpoint leaves the committed artifacts exactly as they were.
