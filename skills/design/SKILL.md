@@ -12,8 +12,9 @@ description: >-
   most the gitignored needs-input scratch report — never a design artifact. Both
   stop early with a quotable notice; every run that writes design artifacts blocks at
   the unskippable local browser review before printing the /milestone-feeder:plan
-  handoff. Read-only agents; writes only local repo files; no GitHub state, gh
-  never a runtime prerequisite.
+  handoff. Read-only agents; writes only local repo files bar the
+  approval-gated DesignSync push; no GitHub state, gh never a runtime
+  prerequisite.
 ---
 
 # design — brief → committed design artifact set
@@ -22,8 +23,9 @@ Turn a feature brief into the committed design artifact set (`spec.md` +
 per-screen lo-fi wireframes) the feeder, driver, and coherence-reviewer ground
 on — the milestone-suite's **pre-plan design phase**
 (`brief → /milestone-designer:design → /milestone-feeder:plan → create → drive`).
-This skill orchestrates read-only agents and writes only local repo files
-(`.project/design-philosophy.md#Layering & boundaries`). It mirrors the feeder
+This skill orchestrates read-only agents and writes only local repo files —
+bar the approval-gated Step 6 DesignSync push (brief:68;
+`.project/design-philosophy.md#Layering & boundaries`). It mirrors the feeder
 `plan` skill's brief normalization, slug rule, agent fan-out, and needs-input
 report (`.project/conventions.md#Canonical exemplars (mirror these)`).
 
@@ -33,7 +35,7 @@ Say this before doing any work:
 
 > Producing a design from the brief — a `spec.md` + per-screen wireframes under
 > the design dir, then a local review checkpoint. Read-only on GitHub; I write
-> only local repo files.
+> only local repo files — any DesignSync push needs your approval.
 
 ## Procedure
 
@@ -228,11 +230,18 @@ nonNegotiable; `.project/design-philosophy.md#Error & failure philosophy`).
 | **Approved** | If any product gaps were parked, **first** print a 🔴 outstanding-needs-input line — the **count** + the `needs-input-<slug>.md` path — so the parks stay visible; **then** print the handoff line, verbatim: `/milestone-feeder:plan <brief>`. (The handoff still prints; the parked gaps are surfaced above it.) |
 | **Rejected** | Artifacts **stay in place**; print **no** handoff line; the human fixes the brief/docs and **re-runs** `design`. |
 
-**DesignSync seam (not this issue).** Under `claude-design`, an optional
-DesignSync push to claude.ai is offered at this **same** checkpoint — that push
-is **#10's** scope, layered on this local path. Leave the seam here; **do not
-implement it**. A missing login / unavailable DesignSync degrades to this local
-path and never fails the run (`docs/adapter-seam.md#Failure / degrade behavior`).
+**Optional DesignSync push** (`claude-design` only). Offer it **with** the
+local review, before the verdict, when a claude.ai login with design
+scopes exists and Step 5 wrote ≥1 screen — **permission-gated, per-plan**. On
+grant, push each screen as a card grouped by `<slug>`, targeting
+`designer.json`'s **pick-once-remembered** `designSyncProjectId`. Payload,
+`@dsCard` marker (uploaded copies only), picker, persistence, and the
+malformed-`designer.json` rule live in
+`docs/adapter-seam.md#DesignSync push mechanics (claude-design)` — **never**
+`/milestone-designer:setup`. Any miss, decline (offer **or** picker), or
+failure before/during the push degrades silently to local-only; the run never
+fails; the outcome threads into the **same** approval path (no duplicate
+handoff) (`docs/adapter-seam.md#Failure / degrade behavior`).
 
 ## Failure handling
 
@@ -247,9 +256,8 @@ advisory) — it is *not* delegated to `.project/design-philosophy.md#Error &
 failure philosophy`, whose scope is adapter-degrade, the never-skipped checkpoint,
 and idempotency, not this fail-closed-write.
 
-This is distinct from an **adapter** failure (Step 6 DesignSync), which degrades
-to the local path and never fails the run
-(`.project/design-philosophy.md#Error & failure philosophy`).
+An **adapter** failure (Step 6 DesignSync) instead degrades and never
+fails the run (`.project/design-philosophy.md#Error & failure philosophy`).
 
 ## Output style
 
@@ -263,8 +271,10 @@ communication-style contract.)
   ground their returns; they never write files or dispatch other agents
   (`.project/design-philosophy.md#Layering & boundaries`).
 - **Writes only local repo files** — the artifact set under
-  `<designDocsDir>/<slug>/` and the scratch needs-input report. **No GitHub
-  state; `gh` is never a runtime prerequisite.**
+  `<designDocsDir>/<slug>/`, the scratch needs-input report, and Step 6's
+  `designSyncProjectId` patch; the sole non-repo write is the approval-gated
+  DesignSync push (brief:68). **No GitHub state; `gh` is never a runtime
+  prerequisite.**
 - **The Step 6 review checkpoint is never skipped** by any flag, config key, env
   var, or non-interactive / CI invocation.
 - **Adapter failures degrade to the local path; they never fail the run.** A
