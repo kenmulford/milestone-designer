@@ -14,7 +14,8 @@
   "domainSkills": [
     "plugin-dev:*",
     "superpowers:writing-skills",
-    "frontend-design"
+    "frontend-design",
+    "skill-creator:skill-creator"
   ],
   "nonNegotiables": [
     "Claude Code plugin: markdown skills + bash-first/pwsh-fallback hooks",

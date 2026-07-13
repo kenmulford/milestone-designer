@@ -68,7 +68,7 @@ normalize to `{ goal, in-scope, out-of-scope, surfaces }` before anything
 downstream consumes it (`.project/conventions.md#Canonical exemplars (mirror these)`).
 For the **GitHub epic `#n`** form, read it via `gh` — **when `gh` is unavailable,
 do not fail**: ask the user to paste the brief text or point at a file. `gh` is
-**never a runtime prerequisite** (`.milestone-config/driver.json:24` nonNegotiable).
+**never a runtime prerequisite** (`.milestone-config/driver.json#nonNegotiables`).
 
 Derive `<slug>` from the normalized brief's **one-line goal** — the **same
 deterministic rule the feeder uses** to name `plan-<slug>.md`, so `<slug>` matches
@@ -206,55 +206,57 @@ Write the artifact set to `<designDocsDir>/<slug>/` per
   so the mapping is unambiguous (`agents/wireframer.md` → "Structured return block").
   **Screen-slug collision** — two `SCREENS` entries whose names transform to the
   **same** `<screen-slug>` → **halt-and-report**, naming **both** entries; never
-  silently overwrite one wireframe with another (deterministic, no silent overwrite).
+  silently overwrite one wireframe with another.
 
 Under `claude-design` (the only v1 adapter) the wireframe format is HTML →
 `screens/`; other adapters (`exports/*`) are documented-contract-only with no
 runtime dispatch (`docs/adapter-seam.md#v1 boundary`; the Step 0 `designTool`
 guard has already halted any non-`claude-design` value).
 
-**Scope boundary — plain write only.** This step lays the **plain write path**.
-The idempotent re-run behavior — a **per-screen diff shown before any
-overwrite** — is **#11's** hardening, out of this issue's scope
-(`docs/artifact-contract.md#Idempotent re-runs`).
+**Idempotent re-runs.** When `<designDocsDir>/<slug>/` exists, diff each
+regenerated artifact (`spec.md`, each screen) against its existing file **before any write**:
+identical → no write; changed → hold in the `.milestone-designer/` scratch
+(created as in Step 3) for Step 6; unreadable → halt naming it; no dir →
+first-run plain write (`docs/artifact-contract.md#Idempotent re-runs`).
 
 ### Step 6 — Local review checkpoint (never skipped)
 
 Open the wireframes in the **local browser** and **BLOCK on human approval**.
 This checkpoint is **never skipped by any flag, config key, env var, or
-non-interactive / CI invocation** (`.milestone-config/driver.json:22`
-nonNegotiable; `.project/design-philosophy.md#Error & failure philosophy`).
+non-interactive / CI invocation** (`.milestone-config/driver.json#nonNegotiables`;
+`.project/design-philosophy.md#Error & failure philosophy`).
+
+**On a re-run** the checkpoint opens the **held** wireframes (per-screen diffs;
+"no changes" if unchanged), never the committed files. **Approved** writes the
+held changes (screens + `spec.md`) **before** the handoff; **Rejected** discards
+them, artifacts untouched (`docs/artifact-contract.md#Idempotent re-runs`).
 
 | Outcome | Behavior |
 |---|---|
-| **Approved** | If any product gaps were parked, **first** print a 🔴 outstanding-needs-input line — the **count** + the `needs-input-<slug>.md` path — so the parks stay visible; **then** print the handoff line, verbatim: `/milestone-feeder:plan <brief>`. (The handoff still prints; the parked gaps are surfaced above it.) |
+| **Approved** | If any product gaps were parked, **first** print a 🔴 outstanding-needs-input line — the **count** + the `needs-input-<slug>.md` path — so the parks stay visible; **then** print the handoff line, verbatim: `/milestone-feeder:plan <brief>`. |
 | **Rejected** | Artifacts **stay in place**; print **no** handoff line; the human fixes the brief/docs and **re-runs** `design`. |
 
 **Optional DesignSync push** (`claude-design` only). Offer it **with** the
 local review, before the verdict, when a claude.ai login with design
-scopes exists and Step 5 wrote ≥1 screen — **permission-gated, per-plan**. On
+scopes exists and the run produced ≥1 screen — **permission-gated, per-plan**. On
 grant, push each screen as a card grouped by `<slug>`, targeting
 `designer.json`'s **pick-once-remembered** `designSyncProjectId`. Payload,
 `@dsCard` marker (uploaded copies only), picker, persistence, and the
 malformed-`designer.json` rule live in
 `docs/adapter-seam.md#DesignSync push mechanics (claude-design)` — **never**
-`/milestone-designer:setup`. Any miss, decline (offer **or** picker), or
-failure before/during the push degrades silently to local-only; the run never
-fails; the outcome threads into the **same** approval path (no duplicate
+`/milestone-designer:setup`. Any miss, decline, or failure degrades silently to
+local-only; the outcome threads into the **same** approval path (no duplicate
 handoff) (`docs/adapter-seam.md#Failure / degrade behavior`).
 
 ## Failure handling
 
-A **ux-architect (Step 2) or wireframer (Step 4) dispatch failure**, or a
-**Step 4→5 completeness failure** (a `SCREENS` entry with a missing,
-name-mismatched, duplicate, or empty-`WIREFRAME` return), or a **screen-slug
-collision** (Step 5) → **halt** with a clear report naming **which** dispatch or
-**which** screen(s) failed. Write **no partial artifact set** from a failed stage
-(fail-closed on the artifact write). **This halt-and-report + fail-closed-write
-rule is this skill's own recorded normative rule** (grounded in issue #9's triage
-advisory) — it is *not* delegated to `.project/design-philosophy.md#Error &
-failure philosophy`, whose scope is adapter-degrade, the never-skipped checkpoint,
-and idempotency, not this fail-closed-write.
+A **ux-architect (Step 2) or wireframer (Step 4) dispatch failure**, a
+**Step 4→5 completeness failure** (Step 4), a **screen-slug collision** (Step 5),
+or a re-run's **unreadable existing artifact file** (Step 5) → **halt** naming
+**which** dispatch or screen(s)/**file** failed; write **no partial artifact set**
+(fail-closed). The dispatch, completeness, and collision halts are the skill's own
+rule (issue #9's triage advisory); the unreadable-artifact halt grounds in the
+philosophy-owned invariant (`.project/design-philosophy.md#Error & failure philosophy`).
 
 An **adapter** failure (Step 6 DesignSync) instead degrades and never
 fails the run (`.project/design-philosophy.md#Error & failure philosophy`).
@@ -283,5 +285,5 @@ communication-style contract.)
   (rolling cap 4).
 - **Park-don't-guess.** Product-scope UX gaps are parked to the needs-input
   report, never guessed; convention-backed gaps resolve inline with a citation.
-- **Plain write path only** — the per-screen diff-before-overwrite idempotency is
-  #11's scope.
+- **Re-runs are idempotent** — diff before any overwrite; identical regeneration
+  → zero writes (`docs/artifact-contract.md#Idempotent re-runs`).
