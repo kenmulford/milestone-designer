@@ -4,9 +4,7 @@
 
 Turn a feature brief into a reviewable design **before** the work is decomposed into issues — a design spec plus lo-fi wireframes that the rest of the suite builds against.
 
-milestone-designer is a Claude Code plugin and the milestone-suite's **pre-plan design phase**. You hand it a brief — a file, a few lines of text, or a GitHub epic issue — and it maps the screens, flows, and states the brief implies, surfaces the UX gaps a decomposition would otherwise miss, and writes a committed design artifact set you can read. Its sibling [`milestone-feeder`](https://github.com/kenmulford/milestone-feeder) then grounds its plan on that spec, [`milestone-driver`](https://github.com/kenmulford/milestone-driver) builds the issues, and [`milestone-coherence-reviewer`](https://github.com/kenmulford/milestone-coherence-reviewer) reviews the result. The shared project docs all four read are written by [`milestone-bootstrapper`](https://github.com/kenmulford/milestone-bootstrapper).
-
-Designing before the architect decomposes is the whole point: wireframing *after* planning can only decorate issues that already exist, while designing *first* turns missing screens, empty states, and unwritten flows into issues instead of late-stage rework.
+The [milestone-feeder](https://github.com/kenmulford/milestone-feeder) converts a general plan or idea into a quantifiable brief. However, quantifiable briefs can be implemented many ways. The milestone-designer helps close the gap between what you expect and what Claude delivers by the end of the [driver](https://github.com/kenmulford/milestone-driver). Wireframes, visual designs, and manual approval all contribute to the accuracy of the feeder's planning and driver's implementation.
 
 **Recommended — the milestone-suite marketplace.** One marketplace carries every suite plugin, so you add it once and install whichever you want:
 
