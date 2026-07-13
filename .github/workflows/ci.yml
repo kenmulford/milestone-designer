@@ -33,7 +33,7 @@ jobs:
       - name: Check out the code under review
         uses: actions/checkout@v7
       - name: Run the unit-test gate
-        run: './scripts/check-skill-size.sh'
+        run: './scripts/check-skill-size.sh && bash tests/check-skill-size.test.sh'
 
   preflight:
     name: preflight
