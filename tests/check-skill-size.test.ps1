@@ -11,18 +11,45 @@
 # only. Every case builds throwaway SKILL.md fixtures in a fresh temp git repo
 # (so the gate's `git rev-parse --show-toplevel` scopes to the fixtures, never
 # this repo). All repos live under ONE parent temp root removed in the finally
-# block — no fixture files are committed and none leak. Exercises the SAME
-# logical cases as its .sh twin (tests/check-skill-size.test.sh) and must report
-# identically.
+# block — no fixture files are committed and none leak.
+#
+# The fixture CASES are DATA, not code: they live in the shared table
+# tests/check-skill-size.cases.json and are consumed here via ConvertFrom-Json.
+# Its .sh twin (tests/check-skill-size.test.sh) drives the SAME table against the
+# .sh gate, so the two twins can never hand-sync-drift (issue #14, AC4b): they
+# share the case DATA and each keeps its own runner. Every skill's filler is a
+# word COUNT — the gate only counts words, so a count is a behaviourally exact
+# fixture and the assertions never inspect filler text.
 
 Set-StrictMode -Version Latest
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
 $Gate = Join-Path $RepoRoot 'scripts/check-skill-size.ps1'
+$Table = Join-Path $ScriptDir 'check-skill-size.cases.json'
 
 $script:pass = 0
 $script:fail = 0
+
+# Load the shared case table up front with a LOUD guard (issue #14 review): a
+# missing/renamed table, unparseable JSON, or a renamed `.cases` key must fail
+# loudly (exit 1), never yield a vacuous zero-case pass. Set-StrictMode makes a
+# missing `.cases` property a terminating error, so the catch covers a renamed
+# key too. The zero-assertion floor at the footer is the backstop.
+if (-not (Test-Path -LiteralPath $Table)) {
+    Write-Host "FAIL: shared case table not found: $Table"
+    exit 1
+}
+try {
+    $script:cases = @((Get-Content -LiteralPath $Table -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop).cases)
+} catch {
+    Write-Host "FAIL: could not load case table $Table — $($_.Exception.Message)"
+    exit 1
+}
+if ($script:cases.Count -eq 0) {
+    Write-Host "FAIL: case table $Table has zero cases"
+    exit 1
+}
 
 # One parent temp root; every repo is a subdir under it, all removed at the end.
 $script:TmpRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("cssz-" + [System.Guid]::NewGuid().ToString('N'))
@@ -97,60 +124,28 @@ function Assert-Contains {
 }
 
 try {
-    # --- Case 1: under-ceiling pass -----------------------------------------
-    $repo = New-TempRepo
-    Write-Skill $repo 'under' 'a short description under the ceiling' (Get-Words 20)
-    $r = Invoke-Gate $repo
-    Assert-Exit 'under-ceiling -> exit 0' 0 $r.Code
+    # --- data-driven case runner (shared table: check-skill-size.cases.json) --
+    # Each case builds its skill fixtures, runs the gate once, then asserts the
+    # exit code and every required output substring — the SAME table the .sh twin
+    # drives, so the two report identically. $script:cases was loaded and guarded
+    # up front (above).
+    foreach ($case in $script:cases) {
+        $repo = New-TempRepo
+        foreach ($skill in $case.skills) {
+            if ($skill.kind -eq 'block') {
+                Write-SkillBlockDesc $repo $skill.name (Get-Words $skill.descWords) (Get-Words $skill.bodyWords)
+            } else {
+                Write-Skill $repo $skill.name (Get-Words $skill.descWords) (Get-Words $skill.bodyWords)
+            }
+        }
 
-    # --- Case 2: empty-glob pass (no skills/ dir) ---------------------------
-    $repo = New-TempRepo
-    $r = Invoke-Gate $repo
-    Assert-Exit 'empty-glob (no SKILL.md) -> exit 0' 0 $r.Code
-    Assert-Contains 'empty-glob prints the no-files notice' $r.Output 'no skills/**/SKILL.md files found'
+        $r = Invoke-Gate $repo
+        Assert-Exit $case.desc $case.expectExit $r.Code
 
-    # --- Case 3: whole-file over ceiling fail -------------------------------
-    $repo = New-TempRepo
-    Write-Skill $repo 'big-file' 'small description' (Get-Words 2600)
-    $r = Invoke-Gate $repo
-    Assert-Exit 'whole-file over ceiling -> exit 1' 1 $r.Code
-    Assert-Contains 'names the offending file' $r.Output 'skills/big-file/SKILL.md'
-    Assert-Contains 'names the whole-file ceiling' $r.Output 'whole-file word count'
-
-    # --- Case 4: description over ceiling fail (inline) ---------------------
-    $repo = New-TempRepo
-    Write-Skill $repo 'big-desc' (Get-Words 210) (Get-Words 20)
-    $r = Invoke-Gate $repo
-    Assert-Exit 'inline description over ceiling -> exit 1' 1 $r.Code
-    Assert-Contains 'names the offending file' $r.Output 'skills/big-desc/SKILL.md'
-    Assert-Contains 'names the description ceiling' $r.Output 'description: word count'
-
-    # --- Case 5: multi-violation, all reported in one run -------------------
-    $repo = New-TempRepo
-    Write-Skill $repo 'a-big-file' 'small description' (Get-Words 2600)
-    Write-Skill $repo 'b-big-desc' (Get-Words 210) (Get-Words 20)
-    $r = Invoke-Gate $repo
-    Assert-Exit 'multi-violation -> exit 1' 1 $r.Code
-    Assert-Contains 'reports the file-ceiling violation' $r.Output 'skills/a-big-file/SKILL.md'
-    Assert-Contains 'reports the description-ceiling violation' $r.Output 'skills/b-big-desc/SKILL.md'
-
-    # --- Case 6: block-scalar description over ceiling (guards C2/D1) -------
-    $repo = New-TempRepo
-    Write-SkillBlockDesc $repo 'block-desc' (Get-Words 250) 'small body'
-    $r = Invoke-Gate $repo
-    Assert-Exit 'block-scalar description over ceiling -> exit 1' 1 $r.Code
-    Assert-Contains 'names the offending file' $r.Output 'skills/block-desc/SKILL.md'
-    Assert-Contains 'names the description ceiling' $r.Output 'description: word count'
-
-    # --- Case 7: nested skill over ceiling (proves recursive skills/**/ scope) ---
-    # A SKILL.md two levels deep (skills/group/name/SKILL.md) must be found and
-    # failed — the one-level skills/*/SKILL.md scope would miss it entirely.
-    $repo = New-TempRepo
-    Write-Skill $repo 'group/nested-big' 'small description' (Get-Words 2600)
-    $r = Invoke-Gate $repo
-    Assert-Exit 'nested skill over ceiling -> exit 1' 1 $r.Code
-    Assert-Contains 'names the nested offending file' $r.Output 'skills/group/nested-big/SKILL.md'
-    Assert-Contains 'names the whole-file ceiling' $r.Output 'whole-file word count'
+        foreach ($ec in $case.expectContains) {
+            Assert-Contains $ec.desc $r.Output $ec.needle
+        }
+    }
 } finally {
     if (Test-Path -LiteralPath $script:TmpRoot) {
         Remove-Item -LiteralPath $script:TmpRoot -Recurse -Force -ErrorAction SilentlyContinue
@@ -158,6 +153,12 @@ try {
 }
 
 Write-Host ""
+# Zero-assertion floor (issue #14 review): a run that asserted nothing is never
+# green — it fails loudly.
+if (($script:pass + $script:fail) -eq 0) {
+    Write-Host "check-skill-size.test.ps1: FAIL — zero assertions ran (harness asserted nothing; check its inputs)."
+    exit 1
+}
 Write-Host "check-skill-size.test.ps1: $script:pass passed, $script:fail failed."
 if ($script:fail -ne 0) { exit 1 }
 exit 0
