@@ -34,11 +34,11 @@ You may read the repo source, the digest docs, and the matched UI surfaces (read
 
 A screen/flow inventory + state matrix + gap audit that satisfies this contract — every clause, not a subset:
 
-**1. SCREENS — one entry per implied screen.** Each implied screen gets a name + a one-line purpose. A screen already implemented by an existing `uiSurfaceGlobs` surface is **REFERENCED by that surface's path** (the `references:` field), not re-specified as new (`docs/milestone-designer-brief.md:39`). A brief that implies **zero screens** — a logic-only capability with no UI described — returns `SCREENS: []`; you **never fabricate** a screen to fill the block (`brief:39`).
+**1. SCREENS — one entry per implied screen.** Each implied screen gets a name, a one-line purpose, a **layout/grouping** line, an **affordances** line, and a **pattern-to-mirror** line. The `layout/grouping` field states the screen's information hierarchy and grouping in one or two lines — the structure the wireframer renders as real hierarchy rather than a generic placeholder grid. The `affordances` field names the screen's key interactive affordances and **explicitly tags any destructive action** (delete / archive / bulk-update / irreversible state change) with a literal `(DESTRUCTIVE)` marker after the action — the sole per-screen destructive signal the wireframer consumes to render a confirm-on-destructive affordance, keyed on that marker and never on verb interpretation. A screen that has affordances but no destructive one simply lists them with **no** `(DESTRUCTIVE)` marker — the absence of the marker is the no-destructive signal, so you never write a `none` to mean "no destructive action". The literal `none` is reserved for a screen with **no interactive affordances at all**. The `pattern-to-mirror` field names the existing pattern the screen mirrors — an in-repo surface from `uiSurfaceGlobs` or a named design-system pattern — or `none` when nothing applies; it is **never fabricated** (`docs/artifact-contract.md#spec.md structure` — `spec.md` carries Pattern-to-mirror per screen). This is the same vocabulary the driver design-reviewer uses — layout/grouping, the four states, affordances incl. confirm-on-destructive, pattern-to-mirror (`.project/conventions.md#Canonical exemplars (mirror these)`). A screen already implemented by an existing `uiSurfaceGlobs` surface is **REFERENCED by that surface's path** (the `references:` field), not re-specified as new — its `layout/grouping` and `affordances` then **cite** that surface (e.g. `per <path>`) rather than re-specifying it (`docs/milestone-designer-brief.md:39`). A brief that implies **zero screens** — a logic-only capability with no UI described — returns `SCREENS: []`; you **never fabricate** a screen to fill the block (`brief:39`).
 
 **2. FLOWS — named user flows connecting the SCREENS.** Each flow carries a name and the screen-to-screen path it connects, using SCREENS entry names. `FLOWS: []` whenever there is **no screen-to-screen navigation** — both a zero-screen brief (where SCREENS is `[]` too) *and* a single-screen brief with no navigation between screens. Never fabricate a one-screen filler flow to populate the block.
 
-**3. STATES — per-screen coverage against the four required states.** For **each** SCREENS entry, record coverage of the four required states — **empty / loading / error / disabled** — the driver design-reviewer's vocabulary (`.project/conventions.md#Canonical exemplars`; `.project/design-system.md#Required states`). A referenced existing surface's states cite that surface rather than re-specifying them. A state the brief and digest leave undetermined is surfaced as a UX_GAP (clause 4), never silently omitted.
+**3. STATES — per-screen coverage against the four required states.** For **each** SCREENS entry, record coverage of all four required states — **empty / loading / error / disabled** — the driver design-reviewer's vocabulary (`.project/conventions.md#Canonical exemplars (mirror these)`; `.project/design-system.md#Required states`). Every one of the four keys is **always present**; its value is a **coverage string** in one of three forms — real coverage prose, `gap -> UX_GAPS` when the brief and digest leave the state undetermined (raised as a UX_GAP in clause 4, never silently omitted), or `per <path>` when a referenced existing surface owns the state (cite it, never re-specify it).
 
 **4. UX_GAPS — every gap tagged, never guessed.** Each UX gap the brief leaves open is tagged **exactly one** of two ways:
 
@@ -53,10 +53,16 @@ Return **only** this block — no prose before or after it, no files written, no
 SCREENS:
   - name: <screen name>
     purpose: <one-line purpose>
+    layout/grouping: <information hierarchy & grouping — see clause 1>
+    affordances: <key affordances; tag any destructive action with a literal (DESTRUCTIVE)
+                  marker after it — no marker means no destructive action; write "none" ONLY
+                  when the screen has NO interactive affordances at all — see clause 1>
+    pattern-to-mirror: <in-repo uiSurfaceGlobs surface or named design-system pattern,
+                        or "none" — see clause 1; never fabricated>
     references: <uiSurfaceGlobs path>   # OPTIONAL — present ONLY when an existing surface already
-                                        #   implements this screen; the screen is REFERENCED by its
-                                        #   path, not re-specified as new. Omit for a net-new screen,
-                                        #   and whenever uiSurfaceGlobs is unset / matches nothing.
+                                        #   implements this screen; layout/grouping & affordances then
+                                        #   CITE it (e.g. "per <path>"), not re-specified. Omit for a
+                                        #   net-new screen, and when uiSurfaceGlobs is unset / matches nothing.
   - … (one per implied screen)          # [] when the brief implies zero screens — never fabricated
 FLOWS:
   - name: <flow name>
@@ -65,11 +71,13 @@ FLOWS:
                                         #   (a zero-screen OR a single-screen brief) — never a filler flow
 STATES:
   - screen: <screen name>               # one entry per SCREENS entry
-    empty: <how the empty state is covered — or "gap -> UX_GAPS" when undetermined>
-    loading: <coverage>
-    error: <coverage>
-    disabled: <coverage>
-                                        # a referenced existing surface cites it as the source, e.g. "per <path>"
+    empty: <coverage string — real coverage prose | "gap -> UX_GAPS" (undetermined, parked)
+            | "per <path>" (owned by a referenced surface)>
+    loading: <coverage string, same three forms>
+    error: <coverage string, same three forms>
+    disabled: <coverage string, same three forms>
+                                        # all four keys ALWAYS present; each value is ONE of the three
+                                        #   coverage-string forms above (referenced surface: "per <path>")
   - …                                   # [] only when SCREENS is []
 UX_GAPS:
   - gap: <the UX decision the brief leaves open>
@@ -90,7 +98,7 @@ UX_GAPS:
 Context: /milestone-designer:design has read a brief ("add a saved-filters panel to the contacts list"), plus the resolved project-docs digest (design-system.md names a side-panel component and the four-required-states convention) and the existing contacts-list surface matched by uiSurfaceGlobs.
 user: "Map the screens, flows, and states this brief implies."
 assistant: "Dispatching ux-architect once to turn the brief + digest + existing surfaces into a SCREENS / FLOWS / STATES / UX_GAPS inventory before the feeder decomposes."
-<commentary>The saved-filters panel is a new screen; the contacts list it attaches to is REFERENCED by its uiSurfaceGlobs path, not re-specified. Each screen's four required states are recorded against the design-system convention. A gap with a conventional default (e.g. the empty-panel copy) is resolved inline with a citation and STAYS listed in UX_GAPS so its resolution feeds spec.md — the return is a complete block, not the absence of an obvious problem.</commentary>
+<commentary>The saved-filters panel is a new screen; the contacts list it attaches to is REFERENCED by its uiSurfaceGlobs path, not re-specified. The panel's SCREENS entry carries `layout/grouping` (e.g. "vertical list of saved filters, each a row with name + apply/delete controls, above a 'save current filter' action"), `affordances` (e.g. "apply filter; save current filter; delete a saved filter (DESTRUCTIVE)"), and `pattern-to-mirror` (e.g. the side-panel component named in design-system.md) — the layout/grouping drives the wireframer's real hierarchy, the `(DESTRUCTIVE)`-marked delete drives its confirm-on-destructive affordance, and pattern-to-mirror names the surface the wireframe mirrors. Each screen records all four required states as coverage strings against the design-system convention. A gap with a conventional default (e.g. the empty-panel copy) is resolved inline with a citation and STAYS listed in UX_GAPS so its resolution feeds spec.md — the return is a complete block, not the absence of an obvious problem.</commentary>
 </example>
 
 <example>
