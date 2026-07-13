@@ -147,33 +147,37 @@ def _is_block_scalar_header(value: str) -> bool:
     return True
 
 
-def parse_frontmatter(path: Path) -> dict | None:
-    """Extract the leading `---` frontmatter block as a key->value dict.
+def _read_and_fence(path: Path) -> tuple[list[str], int] | None:
+    """Read `path` ONCE and locate its `---` frontmatter fences ONCE.
 
-    Lenient, dependency-free parser that mirrors Claude Code's tolerant reader
-    (see the module docstring for why this is NOT strict YAML). Handles flat
-    `key: value` lines and `key: |` / `key: >-`-style block scalars (any header
-    per _is_block_scalar_header). The file MUST open with `---` on line 1 and the
-    block MUST close with a later `---`. Returns the parsed keys, or None if the
-    fence is missing/unterminated (an error is recorded in that case).
+    Returns (lines, close_idx), or None if the block is missing or unterminated
+    (recording the same fence error the parser used to). This single read + single
+    fence scan is SHARED by the key-parse and strict-scalar checks so each governed
+    file is read and fence-scanned exactly once per run (issue #14 AC4a) —
+    previously parse_frontmatter and check_strict_scalars each re-opened and
+    re-scanned the file. The file MUST open with `---` on line 1 and the block MUST
+    close with a later `---`. Read as utf-8-sig so a leading BOM is stripped.
     """
-    text = path.read_text(encoding="utf-8-sig")
-    lines = text.splitlines()
-
+    lines = path.read_text(encoding="utf-8-sig").splitlines()
     if not lines or lines[0].strip() != "---":
         err(path, "missing opening '---' frontmatter fence on line 1")
         return None
-
-    # Find the closing fence.
-    close_idx = None
     for i in range(1, len(lines)):
         if lines[i].strip() == "---":
-            close_idx = i
-            break
-    if close_idx is None:
-        err(path, "frontmatter opened with '---' but is never closed")
-        return None
+            return lines, i
+    err(path, "frontmatter opened with '---' but is never closed")
+    return None
 
+
+def parse_frontmatter_body(lines: list[str], close_idx: int) -> dict:
+    """Parse the frontmatter body (lines[1:close_idx]) into a key->value dict.
+
+    Pure function over the already-read, already-fenced lines from
+    _read_and_fence (no I/O). Lenient, dependency-free parser that mirrors Claude
+    Code's tolerant reader (see the module docstring for why this is NOT strict
+    YAML). Handles flat `key: value` lines and `key: |` / `key: >-`-style block
+    scalars (any header per _is_block_scalar_header).
+    """
     body = lines[1:close_idx]
     data: dict[str, str] = {}
     current_key: str | None = None
@@ -257,7 +261,7 @@ def _report_strict_scalar(
         )
 
 
-def check_strict_scalars(path: Path) -> None:
+def check_strict_scalars(path: Path, lines: list[str], close_idx: int) -> None:
     """Fail any governed-frontmatter plain scalar a STRICT YAML loader rejects.
 
     Claude Desktop's frontmatter loader is strict (js-yaml): an unquoted plain
@@ -281,20 +285,11 @@ def check_strict_scalars(path: Path) -> None:
         which js-yaml folds and rejects a ": " (or trailing ":") on just as it
         would on the header line.
 
-    Errors are recorded via err(); nothing is returned. Fence problems are not
-    re-reported here (parse_frontmatter/require_keys already flag them).
+    Operates on the shared (lines, close_idx) from _read_and_fence — no re-read,
+    no re-scan (issue #14 AC4a). Errors are recorded via err(); nothing is
+    returned. Fence problems are not re-reported here (_read_and_fence already
+    flagged them before this check runs).
     """
-    lines = path.read_text(encoding="utf-8-sig").splitlines()
-    if not lines or lines[0].strip() != "---":
-        return
-    close_idx = None
-    for i in range(1, len(lines)):
-        if lines[i].strip() == "---":
-            close_idx = i
-            break
-    if close_idx is None:
-        return
-
     collecting_block = False  # inside a block scalar (its body is exempt)
     prev_plain_value = (
         False  # the last top-level key held a non-empty inline plain value
@@ -344,6 +339,26 @@ def check_strict_scalars(path: Path) -> None:
         _report_strict_scalar(path, i + 1, value, vstripped, "value")
 
 
+def check_governed_frontmatter(path: Path, keys: list[str]) -> dict | None:
+    """Read `path` ONCE, fence-scan ONCE, then run the required-key check and the
+    strict-scalar check off that single shared read (issue #14 AC4a).
+
+    Returns the parsed frontmatter dict (for callers that need it — e.g. the agent
+    description size budget), or None if the fence is missing/unterminated (already
+    reported by _read_and_fence). The emitted PASS/error lines and their order are
+    byte-identical to the previous parse_frontmatter + check_strict_scalars pair:
+    fence error (if any) → missing/empty-key errors → strict-scalar errors.
+    """
+    fenced = _read_and_fence(path)
+    if fenced is None:
+        return None
+    lines, close_idx = fenced
+    data = parse_frontmatter_body(lines, close_idx)
+    require_keys(path, data, keys)
+    check_strict_scalars(path, lines, close_idx)
+    return data
+
+
 # --- 1 & 2: manifests -------------------------------------------------------
 
 plugin_json = REPO_ROOT / ".claude-plugin" / "plugin.json"
@@ -376,10 +391,7 @@ for skill_md in sorted((REPO_ROOT / "skills").rglob("SKILL.md")):
     if _under_dot_dir(skill_md):
         continue
     checked += 1
-    fm = parse_frontmatter(skill_md)
-    if fm is not None:
-        require_keys(skill_md, fm, ["name", "description"])
-        check_strict_scalars(skill_md)
+    check_governed_frontmatter(skill_md, ["name", "description"])
 
 # Agents: every agents/**/*.md (recursive) — require name + description, and
 # enforce the description size budget in this SAME walk (one parse per file).
@@ -389,10 +401,8 @@ if agents_dir.is_dir():
         if _under_dot_dir(agent_md):
             continue
         checked += 1
-        fm = parse_frontmatter(agent_md)
+        fm = check_governed_frontmatter(agent_md, ["name", "description"])
         if fm is not None:
-            require_keys(agent_md, fm, ["name", "description"])
-            check_strict_scalars(agent_md)
             description = str(fm.get("description", "")).strip()
             if description:
                 word_count = len(description.split())
@@ -412,12 +422,10 @@ if commands_dir.is_dir():
         if _under_dot_dir(cmd_md):
             continue
         checked += 1
-        fm = parse_frontmatter(cmd_md)
-        if fm is not None:
-            require_keys(cmd_md, fm, ["description"])
-            # Desktop's strict loader reads command frontmatter identically to
-            # skills'/agents', so the strict-scalar rule governs it too.
-            check_strict_scalars(cmd_md)
+        # Desktop's strict loader reads command frontmatter identically to
+        # skills'/agents', so the strict-scalar rule governs it too (run inside
+        # check_governed_frontmatter's single shared read).
+        check_governed_frontmatter(cmd_md, ["description"])
 
 # Note: skill-size governance (SKILL.md word ceilings) is intentionally NOT
 # enforced here. Per issue #13 the flat shell gate scripts/check-skill-size.{sh,

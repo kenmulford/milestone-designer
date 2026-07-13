@@ -18,7 +18,7 @@ Where things go, and the shape of a feature.
 
 ## Test patterns
 Where tests live, how they're named, fixtures/factories, and what a good test looks like.
-> Mirror the sibling plugins' harness; CI floor = the skill-size gate (`scripts/check-skill-size.sh`, word ceilings on SKILL.md files) plus its fixture harness (`tests/check-skill-size.test.{sh,ps1}`), wired into the `unit-tests` gate via `driver.json#unitTestCmd` (issue #12).
+> Mirror the sibling plugins' harness; CI floor = the skill-size gate (`scripts/check-skill-size.sh`, word ceilings on SKILL.md files) plus its fixture harness (`tests/check-skill-size.test.{sh,ps1}`, both driven by the shared case table `tests/check-skill-size.cases.json`), wired into the `unit-tests` gate via `driver.json#unitTestCmd` (issue #12). The plugin-structure validator (`scripts/validate-plugin-structure.py`) additionally has a local-only characterization harness (`tests/validate-plugin-structure.test.sh` — single bash black-box, run manually, no `.ps1` twin since the validator is one cross-platform Python script) that pins its parser edges before preflight (issue #14). Both bash harnesses share `tests/lib.sh`.
 
 ## Canonical exemplars (mirror these)
 The reference implementations to copy when building something similar. Point at real code.

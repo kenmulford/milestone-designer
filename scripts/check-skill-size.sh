@@ -41,6 +41,18 @@
 # twins stay byte-identical. The find is guarded by a skills/ dir test, so its
 # zero-match / no-dir cases stay quiet and pass.
 #
+# Twin-parity contract with scripts/check-skill-size.ps1 (issue #14):
+#   - File-set case parity (AC1a): `find -name SKILL.md` is EXACT-CASE by
+#     pattern, so skill.md / Skill.md are NOT gated. Exact-case `SKILL.md` is the
+#     repo convention (.project/conventions.md#Naming: `skills/<name>/SKILL.md`).
+#     The .ps1 twin's Get-ChildItem `-Filter` is case-INSENSITIVE on Windows, so
+#     it adds an exact-case post-filter to gate the IDENTICAL set.
+#   - Violation-order parity (AC1b): the find output is `LC_ALL=C sort`ed (byte
+#     order), so every violation is emitted deterministically in byte order. The
+#     .ps1 twin sorts ordinally ([string]::CompareOrdinal) to match this byte
+#     order exactly — NOT a culture-aware sort, which would diverge on
+#     hyphen/underscore/case-mixed names.
+#
 # Frontmatter robustness: a leading UTF-8 BOM on line 1 and CRLF line endings
 # are both tolerated (a Windows-authored SKILL.md must not slip past the gate on
 # a fence mismatch). The description: field may be an inline scalar OR a YAML

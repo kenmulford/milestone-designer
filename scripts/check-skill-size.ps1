@@ -21,6 +21,19 @@
 #   - The skills/**/SKILL.md scope matches the bash find: recursive at any
 #     depth, dot-named directories excluded at any depth, OS-hidden dirs
 #     included.
+#   - File-set case parity (issue #14 AC1a): the gated set is the EXACT-CASE
+#     `SKILL.md` set. PowerShell's `-Filter 'SKILL.md'` is case-insensitive on
+#     Windows (it would also match skill.md / Skill.md), so a
+#     `Where-Object { $_.Name -ceq 'SKILL.md' }` post-filter re-narrows to the
+#     exact leaf name — matching the .sh twin's case-sensitive
+#     `find -name SKILL.md`. Exact-case `SKILL.md` is the repo convention
+#     (.project/conventions.md#Naming: `skills/<name>/SKILL.md`).
+#   - Violation-order parity (issue #14 AC1b): violations are emitted in byte
+#     (ordinal) order via [Array]::Sort with [string]::CompareOrdinal, which is
+#     byte-identical to the .sh twin's `LC_ALL=C sort` for the ASCII paths
+#     SKILL.md files live under. (PowerShell's default Sort-Object is culture-
+#     aware and would emit a DIFFERENT order on hyphen/underscore/case-mixed
+#     names — e.g. it sorts `a_b` before `a-b`, where byte order is the reverse.)
 #   - A leading UTF-8 BOM and CRLF line endings are tolerated; the description:
 #     field may be an inline scalar or a YAML block scalar (`description: >-`/`|`,
 #     including an indentation/chomping indicator such as `>2`) whose indented
@@ -101,6 +114,12 @@ $files = @()
 if (Test-Path -LiteralPath 'skills' -PathType Container) {
     $files = @(
         Get-ChildItem -LiteralPath 'skills' -Recurse -Force -File -Filter 'SKILL.md' |
+            # -Filter matches case-INSENSITIVELY on Windows (it would also gate
+            # skill.md / Skill.md); the .sh twin's `find -name SKILL.md` is
+            # exact-case. Re-filter on the exact leaf name so both twins gate the
+            # IDENTICAL set — exact-case 'SKILL.md' is the repo convention
+            # (.project/conventions.md#Naming: `skills/<name>/SKILL.md`).
+            Where-Object { $_.Name -ceq 'SKILL.md' } |
             ForEach-Object {
                 $rel = [System.IO.Path]::GetRelativePath($repoRoot, $_.FullName).Replace('\', '/')
                 [PSCustomObject]@{ Rel = $rel; Full = $_.FullName }

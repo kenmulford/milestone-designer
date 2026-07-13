@@ -8,32 +8,57 @@
 #
 # No test-framework dependency (none is approved — .project/library-manifest.md
 # #Approved libraries): plain shell conditionals and exit-code/substring
-# assertions only. Every case builds throwaway SKILL.md fixtures in a fresh temp
-# git repo (so the gate's `git rev-parse --show-toplevel` scopes to the fixtures,
-# never this repo). All repos live under ONE parent temp root created in this
-# (parent) shell, which the EXIT trap removes — no fixture files are committed
-# and none leak.
+# assertions from tests/lib.sh only. Every case builds throwaway SKILL.md
+# fixtures in a fresh temp git repo (so the gate's `git rev-parse
+# --show-toplevel` scopes to the fixtures, never this repo). All repos live under
+# ONE parent temp root (lib_make_tmproot) that the EXIT trap removes — no fixture
+# files are committed and none leak.
 #
-# Its .ps1 twin (tests/check-skill-size.test.ps1) exercises the SAME logical
-# cases against the .ps1 gate and must report identically.
+# The fixture CASES are DATA, not code: they live in the shared table
+# tests/check-skill-size.cases.json and are consumed here via jq (a sanctioned
+# dependency — .milestone-config/driver.json#nonNegotiables "bash (jq)"). Its
+# .ps1 twin (tests/check-skill-size.test.ps1) drives the SAME table against the
+# .ps1 gate, so the two twins can never hand-sync-drift (issue #14 AC4b): they
+# share the case DATA and each keeps its own runner. Every skill's filler is a
+# word COUNT — the gate only counts words, so a count is a behaviourally exact
+# fixture and the assertions never inspect filler text.
+#
+# The whole table is read in ONE jq pass (issue #14 review) — a tab-delimited
+# record stream (CASE / SKILL / CONTAIN / END) consumed by a bash-3.2-safe
+# `while read` loop — rather than dozens of per-field jq spawns. jq's presence
+# and a positive case count are guarded up front; the lib's summary footer
+# enforces a zero-assertion floor, so a missing/renamed table fails LOUDLY
+# instead of yielding a vacuous zero-case "pass".
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 GATE="$REPO_ROOT/scripts/check-skill-size.sh"
+TABLE="$SCRIPT_DIR/check-skill-size.cases.json"
 
-pass=0
-fail=0
+# shellcheck source=tests/lib.sh
+. "$SCRIPT_DIR/lib.sh"
 
-# One parent temp root, created in THIS shell so the trap can see it (mk_repo
-# runs inside command substitution — a subshell — so any variable it set would
-# be lost; creating repos as subdirs under this root sidesteps that entirely).
-TMP_ROOT="$(mktemp -d)"
-cleanup() {
-  [ -n "${TMP_ROOT:-}" ] && [ -d "$TMP_ROOT" ] && rm -rf "$TMP_ROOT"
-}
-trap cleanup EXIT
+# --- up-front dependency + table guards (fail LOUDLY, never vacuously) --------
+lib_require_cmd jq "install jq (a repo nonNegotiable dependency) to run this harness"
+if [ ! -f "$TABLE" ]; then
+  echo "FAIL: shared case table not found: $TABLE"
+  exit 1
+fi
+ncases="$(jq '.cases | length' "$TABLE" 2>/dev/null | tr -d '\r')"
+case "$ncases" in
+  '' | *[!0-9]*)
+    echo "FAIL: case table $TABLE did not yield a numeric .cases length (got '${ncases}')"
+    exit 1
+    ;;
+esac
+if [ "$ncases" -eq 0 ]; then
+  echo "FAIL: case table $TABLE has zero cases"
+  exit 1
+fi
+
+lib_make_tmproot
 
 mk_repo() {
   local d
@@ -83,80 +108,60 @@ run_gate() {
   CODE=$?
 }
 
-assert_exit() {
-  local desc="$1" expected="$2" actual="$3"
-  if [ "$actual" -eq "$expected" ]; then
-    echo "PASS: $desc (exit $actual)"; pass=$((pass + 1))
-  else
-    echo "FAIL: $desc (expected exit $expected, got $actual)"; fail=$((fail + 1))
-  fi
-}
+# --- data-driven case runner (shared table: check-skill-size.cases.json) ------
+# ONE jq pass emits a tab-delimited record stream; the loop below writes each
+# case's skill fixtures, runs the gate once at END, then asserts the exit code
+# and every buffered output substring. `tr -d '\r'` neutralises msys jq's
+# text-mode CRLF so the last field is clean on Windows (no-op on Linux CI).
+# bash-3.2-safe: `while read`, indexed arrays, arithmetic — no mapfile/readarray.
+cur_desc=""
+cur_exit=""
+repo=""
+n_contain=0
+contain_desc=()
+contain_needle=()
 
-assert_contains() {
-  local desc="$1" haystack="$2" needle="$3"
-  case "$haystack" in
-    *"$needle"*) echo "PASS: $desc"; pass=$((pass + 1)) ;;
-    *) echo "FAIL: $desc (missing '$needle')"; echo "--- output ---"; echo "$haystack"; fail=$((fail + 1)) ;;
+while IFS=$'\t' read -r tag a b c d; do
+  case "$tag" in
+    CASE)
+      cur_desc="$a"; cur_exit="$b"
+      repo="$(mk_repo)"
+      n_contain=0
+      contain_desc=()
+      contain_needle=()
+      ;;
+    SKILL)
+      # a=kind b=name c=descWords d=bodyWords
+      if [ "$a" = "block" ]; then
+        write_skill_block_desc "$repo" "$b" "$(gen_words "$c")" "$(gen_words "$d")"
+      else
+        write_skill "$repo" "$b" "$(gen_words "$c")" "$(gen_words "$d")"
+      fi
+      ;;
+    CONTAIN)
+      # a=assertion-desc b=needle
+      contain_desc[$n_contain]="$a"
+      contain_needle[$n_contain]="$b"
+      n_contain=$((n_contain + 1))
+      ;;
+    END)
+      run_gate "$repo"
+      assert_exit "$cur_desc" "$cur_exit" "$CODE"
+      k=0
+      while [ "$k" -lt "$n_contain" ]; do
+        assert_contains "${contain_desc[$k]}" "$OUT" "${contain_needle[$k]}"
+        k=$((k + 1))
+      done
+      ;;
   esac
-}
+done < <(
+  jq -r '
+    .cases[] |
+      ("CASE\t" + .desc + "\t" + (.expectExit | tostring)),
+      (.skills[] | "SKILL\t" + .kind + "\t" + .name + "\t" + (.descWords | tostring) + "\t" + (.bodyWords | tostring)),
+      (.expectContains[] | "CONTAIN\t" + .desc + "\t" + .needle),
+      "END"
+  ' "$TABLE" | tr -d '\r'
+)
 
-# --- Case 1: under-ceiling pass ---------------------------------------------
-repo="$(mk_repo)"
-write_skill "$repo" "under" "a short description under the ceiling" "$(gen_words 20)"
-run_gate "$repo"
-assert_exit "under-ceiling -> exit 0" 0 "$CODE"
-
-# --- Case 2: empty-glob pass (no skills/ dir) -------------------------------
-repo="$(mk_repo)"
-run_gate "$repo"
-assert_exit "empty-glob (no SKILL.md) -> exit 0" 0 "$CODE"
-assert_contains "empty-glob prints the no-files notice" "$OUT" "no skills/**/SKILL.md files found"
-
-# --- Case 3: whole-file over ceiling fail -----------------------------------
-repo="$(mk_repo)"
-write_skill "$repo" "big-file" "small description" "$(gen_words 2600)"
-run_gate "$repo"
-assert_exit "whole-file over ceiling -> exit 1" 1 "$CODE"
-assert_contains "names the offending file" "$OUT" "skills/big-file/SKILL.md"
-assert_contains "names the whole-file ceiling" "$OUT" "whole-file word count"
-
-# --- Case 4: description over ceiling fail (inline) --------------------------
-repo="$(mk_repo)"
-write_skill "$repo" "big-desc" "$(gen_words 210)" "$(gen_words 20)"
-run_gate "$repo"
-assert_exit "inline description over ceiling -> exit 1" 1 "$CODE"
-assert_contains "names the offending file" "$OUT" "skills/big-desc/SKILL.md"
-assert_contains "names the description ceiling" "$OUT" "description: word count"
-
-# --- Case 5: multi-violation, all reported in one run -----------------------
-repo="$(mk_repo)"
-write_skill "$repo" "a-big-file" "small description" "$(gen_words 2600)"
-write_skill "$repo" "b-big-desc" "$(gen_words 210)" "$(gen_words 20)"
-run_gate "$repo"
-assert_exit "multi-violation -> exit 1" 1 "$CODE"
-assert_contains "reports the file-ceiling violation" "$OUT" "skills/a-big-file/SKILL.md"
-assert_contains "reports the description-ceiling violation" "$OUT" "skills/b-big-desc/SKILL.md"
-
-# --- Case 6: block-scalar description over ceiling (guards C2/D1) ------------
-repo="$(mk_repo)"
-write_skill_block_desc "$repo" "block-desc" "$(gen_words 250)" "small body"
-run_gate "$repo"
-assert_exit "block-scalar description over ceiling -> exit 1" 1 "$CODE"
-assert_contains "names the offending file" "$OUT" "skills/block-desc/SKILL.md"
-assert_contains "names the description ceiling" "$OUT" "description: word count"
-
-# --- Case 7: nested skill over ceiling (proves recursive skills/**/ scope) ---
-# A SKILL.md two levels deep (skills/group/name/SKILL.md) must be found and
-# failed — the one-level skills/*/SKILL.md glob would miss it entirely.
-repo="$(mk_repo)"
-write_skill "$repo" "group/nested-big" "small description" "$(gen_words 2600)"
-run_gate "$repo"
-assert_exit "nested skill over ceiling -> exit 1" 1 "$CODE"
-assert_contains "names the nested offending file" "$OUT" "skills/group/nested-big/SKILL.md"
-assert_contains "names the whole-file ceiling" "$OUT" "whole-file word count"
-
-# --- summary -----------------------------------------------------------------
-echo ""
-echo "check-skill-size.test.sh: $pass passed, $fail failed."
-[ "$fail" -eq 0 ] || exit 1
-exit 0
+lib_finish "check-skill-size.test.sh"
