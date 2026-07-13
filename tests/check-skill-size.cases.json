@@ -1,0 +1,102 @@
+{
+  "_comment": [
+    "Shared case table for the skill-size gate's twin harnesses (issue #14, AC4b).",
+    "ONE data file, consumed by BOTH tests/check-skill-size.test.sh (via jq) and",
+    "tests/check-skill-size.test.ps1 (via ConvertFrom-Json), so the two twins can",
+    "never hand-sync-drift: they share the case DATA, each keeps its own runner.",
+    "",
+    "Every skill's `desc`/`body` filler is expressed as a word COUNT, not literal",
+    "text — the gate only counts words, so a word count is a behaviourally exact",
+    "and language-neutral fixture (the assertions never inspect filler text). All",
+    "fields are always present (no optional keys) so both jq `//`-free access and",
+    "PowerShell Set-StrictMode -Version Latest property access stay clean.",
+    "",
+    "Schema:",
+    "  cases[]        one fixture case",
+    "    desc           label for the exit-code assertion (also the case label)",
+    "    skills[]       SKILL.md fixtures to write (empty = the zero-skills case)",
+    "      kind           'inline' (description: <words> on one line) |",
+    "                     'block'  (description: >- with the words on an indented body line)",
+    "      name           skill dir under skills/ (may contain '/' for nesting)",
+    "      descWords      word count of the description scalar/body",
+    "      bodyWords      word count of the SKILL.md body after the frontmatter",
+    "    expectExit     required gate exit code",
+    "    expectContains[]  substrings required in merged stdout+stderr",
+    "      desc           label for the substring assertion (matches legacy output)",
+    "      needle         the required substring"
+  ],
+  "cases": [
+    {
+      "desc": "under-ceiling -> exit 0",
+      "skills": [
+        { "kind": "inline", "name": "under", "descWords": 6, "bodyWords": 20 }
+      ],
+      "expectExit": 0,
+      "expectContains": []
+    },
+    {
+      "desc": "empty-glob (no SKILL.md) -> exit 0",
+      "skills": [],
+      "expectExit": 0,
+      "expectContains": [
+        { "desc": "empty-glob prints the no-files notice", "needle": "no skills/**/SKILL.md files found" }
+      ]
+    },
+    {
+      "desc": "whole-file over ceiling -> exit 1",
+      "skills": [
+        { "kind": "inline", "name": "big-file", "descWords": 2, "bodyWords": 2600 }
+      ],
+      "expectExit": 1,
+      "expectContains": [
+        { "desc": "names the offending file", "needle": "skills/big-file/SKILL.md" },
+        { "desc": "names the whole-file ceiling", "needle": "whole-file word count" }
+      ]
+    },
+    {
+      "desc": "inline description over ceiling -> exit 1",
+      "skills": [
+        { "kind": "inline", "name": "big-desc", "descWords": 210, "bodyWords": 20 }
+      ],
+      "expectExit": 1,
+      "expectContains": [
+        { "desc": "names the offending file", "needle": "skills/big-desc/SKILL.md" },
+        { "desc": "names the description ceiling", "needle": "description: word count" }
+      ]
+    },
+    {
+      "desc": "multi-violation -> exit 1",
+      "skills": [
+        { "kind": "inline", "name": "a-big-file", "descWords": 2, "bodyWords": 2600 },
+        { "kind": "inline", "name": "b-big-desc", "descWords": 210, "bodyWords": 20 }
+      ],
+      "expectExit": 1,
+      "expectContains": [
+        { "desc": "reports the file-ceiling violation", "needle": "skills/a-big-file/SKILL.md" },
+        { "desc": "reports the description-ceiling violation", "needle": "skills/b-big-desc/SKILL.md" }
+      ]
+    },
+    {
+      "desc": "block-scalar description over ceiling -> exit 1",
+      "skills": [
+        { "kind": "block", "name": "block-desc", "descWords": 250, "bodyWords": 2 }
+      ],
+      "expectExit": 1,
+      "expectContains": [
+        { "desc": "names the offending file", "needle": "skills/block-desc/SKILL.md" },
+        { "desc": "names the description ceiling", "needle": "description: word count" }
+      ]
+    },
+    {
+      "desc": "nested skill over ceiling -> exit 1",
+      "skills": [
+        { "kind": "inline", "name": "group/nested-big", "descWords": 2, "bodyWords": 2600 }
+      ],
+      "expectExit": 1,
+      "expectContains": [
+        { "desc": "names the nested offending file", "needle": "skills/group/nested-big/SKILL.md" },
+        { "desc": "names the whole-file ceiling", "needle": "whole-file word count" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "integrationBranch": "develop",
+  "protectedBranch": "main",
+  "sourceGlobs": [
+    "skills/**",
+    "agents/**",
+    "hooks/**",
+    "scripts/**",
+    ".claude-plugin/**",
+    ".github/**"
+  ],
+  "unitTestCmd": "./scripts/check-skill-size.sh && bash tests/check-skill-size.test.sh",
+  "preflightCmd": "python3 scripts/validate-plugin-structure.py",
+  "domainSkills": [
+    "plugin-dev:*",
+    "superpowers:writing-skills",
+    "frontend-design",
+    "skill-creator:skill-creator"
+  ],
+  "nonNegotiables": [
+    "Claude Code plugin: markdown skills + bash-first/pwsh-fallback hooks",
+    "Cross-platform: bash (jq) and PowerShell 7+",
+    "Human review checkpoint in design is never skipped by any flag",
+    "Adapter failures degrade to the local path; they never fail the run",
+    "The designer writes no GitHub state (gh is not a runtime prerequisite)",
+    "Agents are read-only (ux-architect, wireframer)"
+  ],
+  "stack": "plugin"
+}
