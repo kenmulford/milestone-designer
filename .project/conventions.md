@@ -18,7 +18,7 @@ Where things go, and the shape of a feature.
 
 ## Test patterns
 Where tests live, how they're named, fixtures/factories, and what a good test looks like.
-> Mirror the sibling plugins' harness; CI floor = skill-size gate (`scripts/check-skill-size.sh`, word ceilings on SKILL.md files). Note: the harness lands with this milestone's repo-hygiene issue — land it early; the `unit-tests` CI check is red until it exists.
+> Mirror the sibling plugins' harness; CI floor = the skill-size gate (`scripts/check-skill-size.sh`, word ceilings on SKILL.md files) plus its fixture harness (`tests/check-skill-size.test.{sh,ps1}`), wired into the `unit-tests` gate via `driver.json#unitTestCmd` (issue #12).
 
 ## Canonical exemplars (mirror these)
 The reference implementations to copy when building something similar. Point at real code.

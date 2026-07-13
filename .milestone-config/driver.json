@@ -9,7 +9,7 @@
     ".claude-plugin/**",
     ".github/**"
   ],
-  "unitTestCmd": "./scripts/check-skill-size.sh",
+  "unitTestCmd": "./scripts/check-skill-size.sh && bash tests/check-skill-size.test.sh",
   "preflightCmd": "python3 scripts/validate-plugin-structure.py",
   "domainSkills": [
     "plugin-dev:*",
