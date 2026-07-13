@@ -15,7 +15,7 @@ What kind of system is this, and what does it fundamentally optimize for?
 
 ## Layering & boundaries
 The layers and the allowed dependency directions — what may depend on what, and what must never.
-> Skills orchestrate (`design`, `setup`) → read-only agents (ux-architect, dispatched exactly once; wireframer, one per screen, concurrent rolling cap 4) → the committed artifact contract `docs/designs/<slug>/` (`spec.md`, `screens/*.html`, `exports/*.png`). Adapter seam behind the `designTool` config key (default `claude-design`); an adapter satisfies the pipeline iff it lands `spec.md` + screens in the design dir. Downstream consumes only committed files, never a design tool. Agents never write; skills write only local repo files. (brief :21-47)
+> Skills orchestrate (`design`, `setup`) → read-only agents (ux-architect, dispatched exactly once; wireframer, one per screen, concurrent rolling cap 4) → the committed artifact contract `docs/designs/<slug>/` (`spec.md`, `screens/*.html`, `exports/*.png`). Adapter seam behind the `designTool` config key (default `claude-design`); an adapter satisfies the pipeline iff it lands `spec.md` + screens in the design dir. Downstream consumes only committed files, never a design tool. Agents never write; skills write only local repo files — bar the `design` skill's approval-gated DesignSync push (brief :68). (brief :21-47)
 
 ## What we optimize for
 Ranked priorities, and the explicit non-goals that follow from them.
