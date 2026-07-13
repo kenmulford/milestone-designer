@@ -51,6 +51,7 @@ Non-secret per-environment application settings — API base URLs (`apiUrl`), fe
 | `designDocsDir` | `.milestone-config/designer.json` | repo-relative path (default `docs/designs`) | all | no (defaults) |
 | `uxArchitectAgent` | `.milestone-config/designer.json` | agent ref (default `milestone-designer:ux-architect`) | all | no (defaults) |
 | `wireframerAgent` | `.milestone-config/designer.json` | agent ref (default `milestone-designer:wireframer`) | all | no (defaults) |
+| `designSyncProjectId` | `.milestone-config/designer.json` | string (claude.ai Design System project id) | all | no — written by `design` at the first granted DesignSync push, never by setup |
 
 Shared keys (`uiSurfaceGlobs`, `projectDocs`) are resolved from the existing driver/feeder config, never duplicated in `designer.json`. (brief :48-57)
 

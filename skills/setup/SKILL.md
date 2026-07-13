@@ -9,10 +9,11 @@ description: >-
 # setup — designer config bootstrap
 
 Materialize `.milestone-config/designer.json`, the designer-specific config
-holding four keys. The skill writes/patches the file **directly with its own
-Read/Write tools** — no script, no `gh` call, no GitHub state. Re-runs are
-idempotent: an already-complete config is never touched; a partial one is
-repaired key-by-key.
+holding four setup-managed keys (plus an optional fifth, `designSyncProjectId`,
+that the `design` skill writes at push time — setup never touches it). The skill
+writes/patches the file **directly with its own Read/Write tools** — no script,
+no `gh` call, no GitHub state. Re-runs are idempotent: an already-complete config
+is never touched; a partial one is repaired key-by-key.
 
 ## When this runs
 
@@ -23,10 +24,12 @@ repaired key-by-key.
 
 ## Config schema (canonical)
 
-`.milestone-config/designer.json` holds exactly these four keys, each
-`Required? no (defaults)` and defaulting independently. This table is the
-in-file source of truth for the keys and their defaults; per-key shape/enum
-detail lives in `.project/config-catalog.md#App config (per-environment)`.
+`.milestone-config/designer.json` holds four **setup-managed** keys, each
+`Required? no (defaults)` and defaulting independently, **plus** an optional
+fifth key `designSyncProjectId` that has **no default** and is written at push
+time by the `design` skill — **never by setup**. This table is the in-file
+source of truth for the keys and their defaults; per-key shape/enum detail lives
+in `.project/config-catalog.md#App config (per-environment)`.
 
 | Key | Documented default |
 |---|---|
@@ -34,9 +37,10 @@ detail lives in `.project/config-catalog.md#App config (per-environment)`.
 | `designDocsDir` | `docs/designs` |
 | `uxArchitectAgent` | `milestone-designer:ux-architect` |
 | `wireframerAgent` | `milestone-designer:wireframer` |
+| `designSyncProjectId` | _none — written at push time by `design`, never by setup_ |
 
 Full happy-path file the **Absent** branch writes **verbatim** on a fresh
-install (the four keys above, at their defaults):
+install (the four **defaulted** keys above, at their defaults):
 
 ```json
 {
@@ -66,10 +70,10 @@ on its state.
 
 | State | Behavior |
 |---|---|
-| **Absent** (no file, `.milestone-config/` may also be absent) | Create the dir if needed, then write all four keys at the table's defaults — the **verbatim** JSON above. |
+| **Absent** (no file, `.milestone-config/` may also be absent) | Create the dir if needed, then write the four defaulted keys at the table's defaults — the **verbatim** JSON above. **Never** write `designSyncProjectId` (no default; the `design` push adds it later). |
 | **Malformed** — file exists but does not parse as JSON | Make **no writes**. Report 🔴 with the parse problem and ask the human to fix or delete the file. Never rewrite or clobber a hand-edited file (`.project/design-philosophy.md#Error & failure philosophy`). |
-| **Complete** — all four keys present | Make **no changes** (non-destructive re-run). Report the current values back to the user. Never silently overwrite a complete config (`.project/design-philosophy.md#Error & failure philosophy`, `#One-way doors` — repo files are canonical). |
-| **Partial** — some of the four keys missing (hand-edited, or an older schema) | Fill **only** the missing keys with their documented defaults from the table. Leave every already-present key's value **untouched** — do not rewrite the whole file. Each key defaults independently. |
+| **Complete** — all four defaulted keys present | Make **no changes** (non-destructive re-run). Report the current values back to the user. Never silently overwrite a complete config (`.project/design-philosophy.md#Error & failure philosophy`, `#One-way doors` — repo files are canonical). A present `designSyncProjectId` is left untouched; its presence/absence never affects completeness. |
+| **Partial** — some of the four defaulted keys missing (hand-edited, or an older schema) | Fill **only** the missing defaulted keys with their documented defaults from the table. `designSyncProjectId` is never filled (it has no default). Leave every already-present key's value **untouched** — do not rewrite the whole file. Each key defaults independently. |
 
 **Never overwrite a present key's value.** In the partial case, a key the user
 set to a non-default value (e.g. `"designTool": "figma"`) stays as they set it;
@@ -79,7 +83,7 @@ only genuinely-absent keys are added.
 `projectDocs` (they never belong here), leave the **stray key in place** — the
 skill never deletes keys. Report it with 🔴 and the instruction to remove it
 manually. The normal state-table branch still governs the rest of the file: a
-Partial file still gets **only** its missing keys filled, a Complete file gets
+Partial file still gets **only** its missing defaulted keys filled, a Complete file gets
 no changes — the stray key is neither stripped nor a reason to skip an otherwise
 due repair.
 
