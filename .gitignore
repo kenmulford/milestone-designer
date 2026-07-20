@@ -1,1 +1,33 @@
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Python bytecode cache (from the gate scripts under scripts/)
+__pycache__/
+*.pyc
+
+# Logs and scratch
+*.log
+/tmp/
+/scratch/
+
+# Per-developer Claude Code settings. The project-level .claude/settings.json IS
+# tracked (shared, repo-relative permissions); settings.local.json is per-clone and
+# routinely holds machine-absolute paths — never commit it.
+.claude/settings.local.json
+
+# milestone-bootstrapper per-run scratch (the provisioning plan file). Per-clone
+# scratch the user reviews then deploys via `apply`; never committed.
 .milestone-bootstrapper/
+
+# NOTE: milestone-feeder and milestone-config scratch are handled by their own
+# committed nested ignore files — .milestone-feeder/.gitignore and
+# .milestone-config/.gitignore — so the tracked profiles (driver.json, feeder.json)
+# stay tracked. Do not add blanket /.milestone-config/ or /.milestone-feeder/ rules here.
