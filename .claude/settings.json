@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 scripts/validate-plugin-structure.py)",
+      "Bash(python scripts/validate-plugin-structure.py)",
+      "Bash(bash tests/check-skill-size.test.sh)",
+      "Bash(./scripts/check-skill-size.sh && bash tests/check-skill-size.test.sh)",
+      "Bash(./scripts/check-skill-size.sh)",
+      "Bash(bash tests/validate-plugin-structure.test.sh)"
+    ]
+  }
+}
