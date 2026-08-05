@@ -1,5 +1,5 @@
 {
   "name": "milestone-designer",
   "description": "The milestone-suite's fifth plugin: a pre-plan design phase that reads a feature brief, maps the screens, flows, and states it implies, surfaces UX gaps before decomposition, and produces lo-fi wireframes plus a design spec the feeder, driver, and coherence-reviewer ground on.",
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

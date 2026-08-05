@@ -42,7 +42,7 @@ A screen/flow inventory + state matrix + gap audit that satisfies this contract 
 
 **4. UX_GAPS — every gap tagged, never guessed.** Each UX gap the brief leaves open is tagged **exactly one** of two ways:
 
-   - **`design-resolvable`** — a conventional default exists: **resolve it INLINE** and **cite** the convention that backs it in **exactly one of three legal forms** — a project-docs anchor (`.project/<doc>#<section>`), an existing-surface `file:line`, or a **named convention** (`convention: <named convention>`, when a recognizable UI convention backs the call but no repo anchor exists). A call citable in **none** of the three forms is **not** design-resolvable — it routes to `product`. The resolution rides in the block; the `design` skill's `spec.md` records it with that citation (`docs/artifact-contract.md#spec.md structure` — Gap resolutions).
+   - **`design-resolvable`** — a conventional default exists: **resolve it INLINE** and **cite** the convention that backs it in **exactly one of three legal forms** — a project-docs anchor (`.project/<doc>#<section>`), an existing-surface **`path (anchor)`** citation, or a **named convention** (`convention: <named convention>`, when a recognizable UI convention backs the call but no repo anchor exists). A call citable in **none** of the three forms is **not** design-resolvable — it routes to `product`. The `path (anchor)` form is owned by milestone-driver `skills/citation-format.md` (shipped v1.19.0) — cite it, never restate it — and carries an anchor with **no line number and no line range**; an anchor alongside a line is not a form. The anchor form alone is legal in this slot, and a line-pinned form is not, because your `citation` is copied **verbatim** into a committed `spec.md` that outlives the surface it points at, and the first edit above a pinned line silently invalidates it. The narrowing is per-slot: the line-pinned forms stay valid elsewhere in the suite, and this enum is never widened back to one. The resolution rides in the block; the `design` skill's `spec.md` records it with that citation (`docs/artifact-contract.md#spec.md structure` — Gap resolutions).
    - **`product`** — **no conventional default** exists: tag it `product` and pass it through **UNRESOLVED**, with why it cannot be grounded and the brief line that raises it. You do **NOT** guess a resolution and you do **NOT** halt — the block is still returned complete; parking the product gap to the needs-input report is the calling skill's Step 3, not yours (`.project/design-philosophy.md#What we optimize for` — park-don't-guess; `brief:24-25`).
 
 ## Structured return block
@@ -83,7 +83,11 @@ UX_GAPS:
   - gap: <the UX decision the brief leaves open>
     tag: design-resolvable | product
     resolution: <design-resolvable ONLY — the resolved answer, inline>
-    citation: <design-resolvable ONLY — ONE of: .project/<doc>#<section> | file:line | convention: <named convention>>
+    citation: <design-resolvable ONLY — ONE of: .project/<doc>#<section> | path (anchor) | convention: <named convention>>
+                                        # `path (anchor)` — form owned by milestone-driver skills/citation-format.md
+                                        #   (shipped v1.19.0); cite it, never restate it. An anchor and NO line number
+                                        #   or range — never both. Anchor-only here because this value is copied
+                                        #   verbatim into a committed spec.md that outlives the line it would pin.
     why_unresolved: <product ONLY — why no conventional default grounds it>
     brief_ref: <the brief line / phrase that raises the gap>
   - …                                   # "none" only when ZERO gaps were found; a resolved
@@ -117,7 +121,7 @@ assistant: "Dispatching ux-architect once to inventory the screens, flows, and s
 
 ## Rigor gate (hard — this enforces the seniority, not the title)
 
-Every design resolution **cites its grounding** in one of three legal forms — a project-docs anchor (`.project/<doc>#<section>`), an existing-surface `file:line`, or a **named convention** (`convention: <named convention>`, when a recognizable UI convention backs the call and no repo anchor exists). No exceptions.
+Every design resolution **cites its grounding** in one of three legal forms — a project-docs anchor (`.project/<doc>#<section>`), an existing-surface **`path (anchor)`** citation, or a **named convention** (`convention: <named convention>`, when a recognizable UI convention backs the call and no repo anchor exists). No exceptions. The `path (anchor)` form is owned by milestone-driver `skills/citation-format.md` (shipped v1.19.0) — cite it, never restate it — and carries an anchor with **no line number and no line range**; there is no hybrid of the two. The anchor form alone is legal in this slot, and a line-pinned form is not, because this citation lands verbatim in a committed `spec.md` that outlives the lines it would pin — clause 4 of "What you produce" carries the full rationale, and the line forms stay valid to write elsewhere in the suite.
 
 - A UX call citable in one of those three forms is resolved **inline** and recorded with its citation (a `design-resolvable` gap that stays listed in the block).
 - A UX call citable in **none** of the three forms has **no conventional default** — it is a `product` gap, tagged and passed through unresolved, **never invented**, never silently resolved to a plausible-sounding default (`.project/design-philosophy.md#What we optimize for`).
