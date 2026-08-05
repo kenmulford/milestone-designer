@@ -25,5 +25,6 @@
     "The designer writes no GitHub state (gh is not a runtime prerequisite)",
     "Agents are read-only (ux-architect, wireframer)"
   ],
-  "stack": "plugin"
+  "stack": "plugin",
+  "parallel": true
 }
