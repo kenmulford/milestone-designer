@@ -13,11 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Issue | PR | What |
 |---|---|---|
-| #40 Anchor-form citations | #41 | The ux-architect's UX-gap `citation` slot takes the `path (anchor)` form in place of `file:line`. A design resolution recorded in a committed `spec.md` now points at content, so it still resolves after the cited surface's line numbers move. |
+| #40 Anchor-form citations | #41 | The ux-architect's UX-gap `citation` slot takes the `path (anchor)` form in place of the old line-pinned one. A design resolution recorded in a committed `spec.md` now points at content, so it still resolves after the cited surface's line numbers move. |
 
 ### Consumer notes (upgrading from 0.1.0)
 
-- **The `citation` field's source-file option changed shape.** A `design-resolvable` gap now cites an existing surface as `` `path (anchor)` `` — a path plus a literal string from the region — instead of `file:line`. The other two options are unchanged: the project-docs anchor (`.project/<doc>#<section>`) and `convention: <named convention>`. The enum is still exactly three options.
+- **The `citation` field's source-file option changed shape.** A `design-resolvable` gap now cites an existing surface as `` `path (anchor)` `` — a path plus a literal string from the region — instead of a path plus a line number. The other two options are unchanged: the project-docs anchor (`.project/<doc>#<section>`) and `convention: <named convention>`. The enum is still exactly three options.
 - **Why it changed.** The `design` skill copies that citation verbatim into a committed `spec.md` that outlives the surface it points at, so any edit above a pinned line silently invalidated it — no warning, and the citation still looked well-formed.
 - **The form is defined once, in milestone-driver.** `skills/citation-format.md` (shipped in milestone-driver v1.19.0) owns how to pick an anchor, how it resolves, and what a stale one does. This repo points at it rather than restating it, mirroring how `docs/artifact-contract.md` already points slug derivation at milestone-feeder.
 - **Line-pinned citations are not deprecated.** `path:line` and `path:start-end` stay valid to write elsewhere in the suite. The narrowing to anchors is specific to this one slot, because its output is a long-lived committed artifact.
