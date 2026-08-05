@@ -29,7 +29,7 @@ Which adapters emit HTML versus exports is owned by the adapter-seam doc (`docs/
 | Required states | Every screen documents the **four required states**: **empty**, **loading**, **error**, **disabled**. |
 | Affordances | The interactive affordances per screen, including a **confirm affordance for any destructive operation** (delete / archive / bulk-update / irreversible state change). |
 | Pattern-to-mirror | The existing pattern each screen mirrors (an in-repo surface from `uiSurfaceGlobs`, or a named design-system pattern). |
-| Gap resolutions | Each design-resolvable UX gap and how it was resolved, **with a citation** to the convention that backs the resolution. Product-scope gaps are not resolved here — they are parked to the needs-input report (brief:24, brief:66). |
+| Gap resolutions | Each design-resolvable UX gap and how it was resolved, **with a citation** to the convention that backs the resolution, in one of the three forms the ux-architect writes (`agents/ux-architect.md (exactly one of three legal forms)`): a project-docs anchor, an existing-surface `path (anchor)` citation, or a named convention. That form is owned by milestone-driver `skills/citation-format.md` (shipped v1.19.0) — cite it, never restate it — and carries an anchor and **no line number and no line range**, never both. Anchor-only here because `spec.md` is committed and outlives the surfaces it cites; the ux-architect's clause 4 carries the full rationale. Product-scope gaps are not resolved here — they are parked to the needs-input report (brief:24, brief:66). |
 
 ## Slug derivation
 
