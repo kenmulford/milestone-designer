@@ -5,6 +5,28 @@ All notable changes to `milestone-designer` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-05
+
+**Theme:** citations that survive the code moving — the design spec's grounding is now keyed to file content, not to a line number.
+
+### ✨ Added
+
+| Issue | PR | What |
+|---|---|---|
+| #40 Anchor-form citations | #41 | The ux-architect's UX-gap `citation` slot takes the `path (anchor)` form in place of `file:line`. A design resolution recorded in a committed `spec.md` now points at content, so it still resolves after the cited surface's line numbers move. |
+
+### Consumer notes (upgrading from 0.1.0)
+
+- **The `citation` field's source-file option changed shape.** A `design-resolvable` gap now cites an existing surface as `` `path (anchor)` `` — a path plus a literal string from the region — instead of `file:line`. The other two options are unchanged: the project-docs anchor (`.project/<doc>#<section>`) and `convention: <named convention>`. The enum is still exactly three options.
+- **Why it changed.** The `design` skill copies that citation verbatim into a committed `spec.md` that outlives the surface it points at, so any edit above a pinned line silently invalidated it — no warning, and the citation still looked well-formed.
+- **The form is defined once, in milestone-driver.** `skills/citation-format.md` (shipped in milestone-driver v1.19.0) owns how to pick an anchor, how it resolves, and what a stale one does. This repo points at it rather than restating it, mirroring how `docs/artifact-contract.md` already points slug derivation at milestone-feeder.
+- **Line-pinned citations are not deprecated.** `path:line` and `path:start-end` stay valid to write elsewhere in the suite. The narrowing to anchors is specific to this one slot, because its output is a long-lived committed artifact.
+- **No migration needed and nothing to reconfigure.** Citations already written are untouched, and this release changes no `designer.json` key. **No schema changes** to `.milestone-config/driver.json`.
+
+### ⚖️ Post-run audit trail
+
+Judgment-call PRs for this release: none.
+
 ## [0.1.0] - 2026-07-13
 
 **Theme:** the milestone-suite's pre-plan design phase — turn a feature brief into a committed design spec plus lo-fi wireframes *before* the work is decomposed into issues.
