@@ -3,18 +3,9 @@ name: design
 description: >-
   This skill should be used when the user invokes "/milestone-designer:design
   <brief>", or asks to design a feature before planning it. Turns a feature
-  brief into a committed design artifact set — spec.md plus per-screen lo-fi
-  wireframes under the configured design dir — via exactly one ux-architect
-  dispatch and a rolling-cap-4 wireframer fan-out, resolving convention-backed
-  UX gaps inline with citations and parking product-scope gaps to a needs-input
-  report. Runs Step 0's config + design-docs gate through the local review
-  checkpoint. The no-UI-surface exit writes nothing; a zero-screen exit writes at
-  most the gitignored needs-input scratch report — never a design artifact. Both
-  stop early with a quotable notice; every run that writes design artifacts blocks at
-  the unskippable local browser review before printing the /milestone-feeder:plan
-  handoff. Read-only agents; writes only local repo files bar the
-  approval-gated DesignSync push; no GitHub state, gh never a runtime
-  prerequisite.
+  brief into a committed design artifact set (spec.md plus per-screen lo-fi
+  wireframes) that /milestone-feeder:plan plans against, gated by a local
+  browser review. Writes only local repo files; no GitHub state.
 ---
 
 # design — brief → committed design artifact set
@@ -45,7 +36,7 @@ Say this before doing any work:
 |---|---|
 | 1 | Resolve the **shared keys** `uiSurfaceGlobs` / `projectDocs` from the existing driver/feeder config (`.milestone-config/driver.json`, then `feeder.json`), absent-means-default (`projectDocs` → `.project/`). **Never duplicated into `designer.json`** (`skills/setup/SKILL.md` Non-negotiables). `uiSurfaceGlobs` unset → no surface can match; every screen is net-new (degrade, not error). |
 | 2 | Read the **consumer repo's** `design-system.md` **and** `tokens.json` (under `projectDocs`). |
-| 3 | **Gate — before any config write or dispatch.** `design-system.md` **or** `tokens.json` — **either absent, or present with every field `[TBD]`** → **exit immediately**, printing the verbatim no-UI-surface notice (fenced below). **No dispatch, no config write**; no partial `<designDocsDir>/<slug>/` tree and no `designer.json` bootstrap is left behind — the same skip rule the design-reviewer uses (`docs/milestone-designer-brief.md:22`; `agents/ux-architect.md:28`; `docs/artifact-contract.md#No-UI-surface case`; `.project/design-system.md:5-6`). |
+| 3 | **Gate — before any config write or dispatch.** `design-system.md` **or** `tokens.json` — **either absent, or present with every field `[TBD]`** → **exit immediately**, printing the verbatim no-UI-surface notice (fenced below). **No dispatch, no config write**; no partial `<designDocsDir>/<slug>/` tree and no `designer.json` bootstrap is left behind — the same skip rule the design-reviewer uses (`docs/milestone-designer-brief.md:22`; `agents/ux-architect.md` → "What you receive"; `docs/artifact-contract.md#No-UI-surface case`; `.project/design-system.md:5-6`). |
 | 4 | **Resolve `designer.json`** (only now, past the gate) — keys `designTool` / `designDocsDir` / `uxArchitectAgent` / `wireframerAgent`, absent-means-default (`.project/config-catalog.md#App config (per-environment)`). **Absent file → invoke `/milestone-designer:setup`** to bootstrap it, then continue — the user does not re-run the command (`skills/setup/SKILL.md` "When this runs" → Auto). Setup writes `designer.json` **only here, past the gate** — a gated exit at row 3 above leaves the tree untouched (row 3's own "No dispatch, no config write" rule). |
 | 5 | **`designTool` guard.** If `designTool` resolves to `pencil` / `figma` / `canva` (legal enum values, documented-contract-only in v1) → **halt** with a clear notice: that adapter has **no runtime dispatch in v1** — set `designTool` to `claude-design` or leave it unset (`docs/adapter-seam.md#v1 boundary`). This is a **deliberate-config halt**, distinct from the Step 6 adapter-failure degrade, which never halts. |
 | 6 | **Resolve the digests once.** Match `uiSurfaceGlobs` against the repo and read the matched surface files, plus `design-system.md` / `tokens.json` and the relevant sibling `.project/` docs, **once** into digests. Steps 2 and 4 pass **these** digests to the agents; agents never re-read directories (`agents/ux-architect.md` → "What you receive"; `agents/wireframer.md` → "What you receive"). |
@@ -73,10 +64,7 @@ do not fail**: ask the user to paste the brief text or point at a file. `gh` is
 Derive `<slug>` from the normalized brief's **one-line goal** — the **same
 deterministic rule the feeder uses** to name `plan-<slug>.md`, so `<slug>` matches
 across repos with no configuration (**slug parity is a cross-repo contract** —
-`.project/conventions.md#Naming`; `docs/artifact-contract.md#Slug derivation`). The
-designer applies that transformation to the **brief's one-line goal** — stated
-honestly, that is the input difference: the feeder's rule names the *milestone*
-goal, the designer runs the same transformation over the *brief's* one-line goal.
+`.project/conventions.md#Naming`; `docs/artifact-contract.md#Slug derivation`).
 
 The rule, as a **quoted mirror** of the feeder's — tracked mirror; the feeder
 (milestone-feeder `skills/plan/SKILL.md` Step 7) is the single owning implementation
@@ -255,7 +243,7 @@ A **ux-architect (Step 2) or wireframer (Step 4) dispatch failure**, a
 or a re-run's **unreadable existing artifact file** (Step 5) → **halt** naming
 **which** dispatch or screen(s)/**file** failed; write **no partial artifact set**
 (fail-closed). The dispatch, completeness, and collision halts are the skill's own
-rule (issue #9's triage advisory); the unreadable-artifact halt grounds in the
+rule; the unreadable-artifact halt grounds in the
 philosophy-owned invariant (`.project/design-philosophy.md#Error & failure philosophy`).
 
 An **adapter** failure (Step 6 DesignSync) instead degrades and never
