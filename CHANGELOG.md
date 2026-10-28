@@ -5,6 +5,53 @@ All notable changes to `milestone-designer` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-10-27
+
+**Theme:** one bold run per paragraph in the design skill, its agents, and its contract docs, so the bold marks the clause that gates behavior.
+
+### ✨ Emphasis register
+
+| Issue | PR | What |
+|---|---|---|
+| #52 Cut the emphasis register in the agents/ bodies | #58 | `agents/ux-architect.md` and `agents/wireframer.md` carry at most one bold run per paragraph, list item or table row. Text is unchanged apart from the deleted `**` markers. |
+| #53 Cut the emphasis register in skills/design/SKILL.md, docs/artifact-contract.md, and docs/adapter-seam.md | #58 | The same rule applied to the design skill and both contract docs. Lead labels lose their bold, and each unit keeps only its gating clause bold. |
+
+### Consumer notes (upgrading from 0.2.1)
+
+- No behavior change: every edit deletes a `**` pair, and `/milestone-designer:design` reads the same words as in 0.2.1.
+- #51 (drop issue references from runtime prompt text) closed without a code change, because #54 in 0.2.1 already removed them.
+- **No schema changes** to `.milestone-config/driver.json` or `designer.json`.
+
+### ⚖️ Post-run audit trail
+
+Judgment-call PRs: none.
+
+- `skills/setup/SKILL.md` still has paragraphs with more than one bold run (around lines 27-32, 82-88 and 95-99). No issue tracks them.
+- No CI check enforces the one-bold-run rule. `scripts/validate-plugin-structure.py` does not check it, so a future edit can reintroduce multi-bold paragraphs.
+
+## [0.2.1] - 2026-10-27
+
+**Theme:** a prompt surface written for current models. Text that compensated for older models (issue IDs, stacked bold, shouted caps) is gone, and every instruction still says the same thing.
+
+### 🔧 Changed
+
+| Issue | PR | What |
+|---|---|---|
+| #48 Replace both agent frontmatter descriptions and re-derive the ux-architect line citation (prompt audit) | #54 | Issue IDs and the `shipped v1.19.0` pin are removed from runtime text. The `ux-architect`, `wireframer` and `design` descriptions are rewritten as trigger plus purpose. Caps emphasis in agent bodies is lowercased. "Rigor gate" is renamed "Grounding rules". The `skills/design/SKILL.md` line pin into `agents/ux-architect.md` is replaced with a section anchor. |
+| #49 Cut the emphasis register in `skills/setup/SKILL.md` | #55 | Each paragraph, list item or table row carries at most one bold run, kept on the clause that gates behavior. |
+| #50 Apply the emphasis register rules to the `.project/` docs | #55 | The same one-bold-run rule in `.project/config-catalog.md`, `conventions.md` and `environment.md`. Caps words are lowercased, and em dashes on rewritten lines are replaced. |
+
+### Consumer notes (upgrading from 0.2.0)
+
+- No config change. No `designer.json` key changes, and the `.milestone-config/driver.json` schema is unchanged.
+- Agent and skill descriptions are reworded, so auto-invocation matching may shift slightly. The `/milestone-designer:design` and `/milestone-designer:setup` commands are unchanged.
+- No fenced return template or keep-list literal (`SCREENS`, `FLOWS`, `STATES`, `UX_GAPS`, `(DESTRUCTIVE)`, `[TBD]`) changed.
+- #51, #52 and #53 moved to 0.2.2.
+
+### ⚖️ Post-run audit trail
+
+Judgment-call PRs: #55 (7 `/code-review` findings accepted, each with its rationale in the PR body).
+
 ## [0.2.0] - 2026-08-05
 
 **Theme:** citations that survive the code moving — the design spec's grounding is now keyed to file content, not to a line number.
