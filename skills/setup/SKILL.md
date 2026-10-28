@@ -6,6 +6,9 @@ description: >-
   absent.
 ---
 
+If `${CLAUDE_PLUGIN_ROOT}` appears unexpanded, it is the parent of the `skills/` directory that holds this file.
+On Codex, file reads and writes follow `${CLAUDE_PLUGIN_ROOT}/skills/runtime-codex.md`.
+
 # setup — designer config bootstrap
 
 Materialize `.milestone-config/designer.json`, the designer-specific config
