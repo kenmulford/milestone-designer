@@ -5,6 +5,30 @@ All notable changes to `milestone-designer` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-10-27
+
+**Theme:** one bold run per paragraph in the design skill, its agents, and its contract docs, so the bold marks the clause that gates behavior.
+
+### ✨ Emphasis register
+
+| Issue | PR | What |
+|---|---|---|
+| #52 Cut the emphasis register in the agents/ bodies | #58 | `agents/ux-architect.md` and `agents/wireframer.md` carry at most one bold run per paragraph, list item or table row. Text is unchanged apart from the deleted `**` markers. |
+| #53 Cut the emphasis register in skills/design/SKILL.md, docs/artifact-contract.md, and docs/adapter-seam.md | #58 | The same rule applied to the design skill and both contract docs. Lead labels lose their bold, and each unit keeps only its gating clause bold. |
+
+### Consumer notes (upgrading from 0.2.1)
+
+- No behavior change: every edit deletes a `**` pair, and `/milestone-designer:design` reads the same words as in 0.2.1.
+- #51 (drop issue references from runtime prompt text) closed without a code change, because #54 in 0.2.1 already removed them.
+- **No schema changes** to `.milestone-config/driver.json` or `designer.json`.
+
+### ⚖️ Post-run audit trail
+
+Judgment-call PRs: none.
+
+- `skills/setup/SKILL.md` still has paragraphs with more than one bold run (around lines 27-32, 82-88 and 95-99). No issue tracks them.
+- No CI check enforces the one-bold-run rule. `scripts/validate-plugin-structure.py` does not check it, so a future edit can reintroduce multi-bold paragraphs.
+
 ## [0.2.0] - 2026-08-05
 
 **Theme:** citations that survive the code moving — the design spec's grounding is now keyed to file content, not to a line number.
