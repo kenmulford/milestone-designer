@@ -2,7 +2,7 @@
 
 > **What this is.** The committed interface everything downstream grounds on. The design skill assembles this artifact set; the feeder's adapter-satisfaction check reads it; the driver's design-reviewer judges `spec.md` against its own vocabulary. The design *tool* is swappable — this contract is not (`.project/design-philosophy.md#One-way doors`). Downstream consumes only the committed files listed here, never a design tool (`.project/design-philosophy.md#Layering & boundaries`).
 
-**Artifact root.** The root is `designer.json#designDocsDir` (default `docs/designs`). Consumers resolve it from config — never hardcode the path (`.project/config-catalog.md#App config (per-environment)`). `<slug>` is derived per [Slug derivation](#slug-derivation) below.
+Artifact root. The root is `designer.json#designDocsDir` (default `docs/designs`). Consumers resolve it from config — never hardcode the path (`.project/config-catalog.md#App config (per-environment)`). `<slug>` is derived per [Slug derivation](#slug-derivation) below.
 
 ## Artifact layout
 

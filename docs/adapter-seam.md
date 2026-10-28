@@ -32,7 +32,7 @@ The `.pen` / native source of a non-HTML adapter is editable source only: it may
 
 > An adapter **satisfies the pipeline iff it lands `spec.md` + screens in the design dir** (brief:47).
 
-**Screens** = `screens/*.html` for HTML-emitting adapters (`claude-design`), or `exports/*` for adapters that cannot emit HTML (`pencil` / `figma` / `canva`) — a non-HTML adapter's exports *are* its screens (brief:45-47). The full non-satisfaction cases and the "committed files alone, never the tool" framing are owned by `docs/artifact-contract.md#Adapter satisfaction`; this seam only records which adapters land HTML versus exports. This is the exact condition the feeder's adapter-seam check depends on (`.project/design-philosophy.md#Layering & boundaries`).
+Screens = `screens/*.html` for HTML-emitting adapters (`claude-design`), or `exports/*` for adapters that cannot emit HTML (`pencil` / `figma` / `canva`) — a non-HTML adapter's exports *are* its screens (brief:45-47). The full non-satisfaction cases and the "committed files alone, never the tool" framing are owned by `docs/artifact-contract.md#Adapter satisfaction`; this seam only records which adapters land HTML versus exports. This is the exact condition the feeder's adapter-seam check depends on (`.project/design-philosophy.md#Layering & boundaries`).
 
 ## Default / unset behavior
 
@@ -46,7 +46,7 @@ The `design` skill's Step 6 checkpoint offers the push only when all three hold:
 
 Project targeting — pick once, remember. On a granted push, reuse `designSyncProjectId` from `designer.json` (`.project/config-catalog.md#App config (per-environment)`). Only when the key is absent, or its project is confirmed gone (a definitive not-found — not a transient lookup error), list the login's Design System projects and prompt the human to pick or create one; persist the choice with a non-destructive read-patch-write in setup's file format (UTF-8 no BOM, valid JSON, two-space indent, every other key untouched — `skills/setup/SKILL.md`), never by invoking `/milestone-designer:setup`. A `designer.json` that does not parse is **never rewritten** (`.project/design-philosophy.md#Error & failure philosophy`): report 🔴, leave the file alone, and degrade this push to local-only.
 
-**Degrade taxonomy.** Everything short of a completed push degrades silently to local-browser-only review and never fails the run (#Failure / degrade behavior): no login or missing scopes; DesignSync unreachable — at offer time, during the projectId lookup (the persisted id stays untouched), or mid-push after the grant; zero screens (the offer is skipped — nothing to push); the human declining either the permission prompt or the project picker; a malformed `designer.json`.
+Degrade taxonomy. Everything short of a completed push degrades silently to local-browser-only review and never fails the run (#Failure / degrade behavior): no login or missing scopes; DesignSync unreachable — at offer time, during the projectId lookup (the persisted id stays untouched), or mid-push after the grant; zero screens (the offer is skipped — nothing to push); the human declining either the permission prompt or the project picker; a malformed `designer.json`.
 
 ## Failure / degrade behavior
 
