@@ -8,6 +8,8 @@ description: >-
   browser review. Writes only local repo files; no GitHub state.
 ---
 
+If `${CLAUDE_PLUGIN_ROOT}` appears unexpanded, it is the parent of the `skills/` directory that holds this file.
+
 # design — brief → committed design artifact set
 
 Turn a feature brief into the committed design artifact set (`spec.md` +
@@ -29,6 +31,9 @@ Say this before doing any work:
 > only local repo files — any DesignSync push needs your approval.
 
 ## Procedure
+
+On Codex, read `${CLAUDE_PLUGIN_ROOT}/skills/runtime-codex.md` before Step 0.
+It maps agent dispatch, setup invocation, and the Step 6 checkpoint.
 
 ### Step 0 — Resolve config + design docs (the no-UI-surface gate)
 
@@ -213,6 +218,7 @@ Open the wireframes in the local browser and **BLOCK on human approval**.
 This checkpoint is never skipped by any flag, config key, env var, or
 non-interactive / CI invocation (`.milestone-config/driver.json#nonNegotiables`;
 `.project/design-philosophy.md#Error & failure philosophy`).
+On Codex, open, block, and skip DesignSync per `runtime-codex.md#Review checkpoint`.
 
 On a re-run the checkpoint opens the held wireframes (per-screen diffs;
 "no changes" if unchanged), never the committed files. **Approved** writes the

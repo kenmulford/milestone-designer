@@ -20,6 +20,14 @@ The [milestone-feeder](https://github.com/kenmulford/milestone-feeder) converts 
 /plugin install milestone-designer@milestone-designer
 ```
 
+**Codex.** The same suite marketplace installs into Codex:
+
+```
+codex plugin marketplace add kenmulford/milestone-suite
+```
+
+Install `milestone-designer` from `/plugins`, then invoke a skill by its namespaced mention: `$milestone-designer:design mybrief.md`. Handoff lines print in the same form (`$milestone-feeder:plan mybrief.md`). The plugin ships no hooks, so `/hooks` has nothing to trust. On Codex the review checkpoint opens the wireframes from the shell and blocks on your reply, and the optional DesignSync push is skipped (Codex has no DesignSync tool).
+
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 900}} }%%
 flowchart TD
@@ -103,7 +111,7 @@ milestone-designer writes **only local repo files** — it never touches GitHub 
   /milestone-feeder:plan <brief> when ready.
   ```
 
-- **Claude allowed to Read your project docs and existing UI surfaces**, and to Write under the design dir — that's the whole footprint.
+- **The agent allowed to Read your project docs and existing UI surfaces**, and to Write under the design dir — that's the whole footprint.
 - **A browser** for the local review checkpoint.
 - **bash with `jq`, or PowerShell 7+** — for the CI gate twins.
 - **`gh` only if your brief is an epic issue `#n`** — that's the one read. If `gh` is unavailable, paste the brief text or point at a file instead; it is never required.

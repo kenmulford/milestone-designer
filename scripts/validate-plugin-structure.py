@@ -12,6 +12,10 @@ It checks:
   1. .claude-plugin/plugin.json      — parses as JSON, has required key `name`.
   2. .claude-plugin/marketplace.json — parses as JSON, has required keys
                                        `name` and `plugins` (a non-empty list).
+  2b. .codex-plugin/plugin.json      — parses as JSON; `name`, `version` and
+                                       `description` equal the Claude manifest's;
+                                       every `./` path in `skills`, `hooks` and
+                                       `interface` exists inside the plugin root.
   3. Every skills/**/SKILL.md and agents/**/*.md  — opens with a `---`-fenced
      frontmatter block carrying non-empty `name` and `description`; files under
      a dot-named directory at any depth are skipped (parity with the shell size
@@ -381,6 +385,34 @@ if mj is not None:
     plugins = mj.get("plugins")
     if not isinstance(plugins, list) or len(plugins) == 0:
         err(marketplace_json, "required key 'plugins' must be a non-empty list")
+
+# Codex manifest: name/version/description mirror the Claude manifest, and every
+# path it references resolves to an existing file or dir inside the plugin root.
+codex_json = REPO_ROOT / ".codex-plugin" / "plugin.json"
+cj = load_json(codex_json)
+if cj is not None:
+    checked += 1
+    for key in ("name", "version", "description") if pj is not None else ():
+        if cj.get(key) != pj.get(key):
+            err(
+                codex_json,
+                f"'{key}' is '{cj.get(key)}' but .claude-plugin/plugin.json has "
+                f"'{pj.get(key)}' — the two manifests must match",
+            )
+    interface = cj.get("interface") if isinstance(cj.get("interface"), dict) else {}
+    refs = []
+    for k in ("skills", "hooks"):
+        v = cj.get(k)
+        refs += [(k, item) for item in v] if isinstance(v, list) else [(k, v)]
+    refs += [(f"interface.{k}", v) for k, v in interface.items()]
+    for label, ref in refs:
+        if not isinstance(ref, str) or not ref.startswith(("./", "../")):
+            continue
+        target = (REPO_ROOT / ref).resolve()
+        if not target.is_relative_to(REPO_ROOT):
+            err(codex_json, f"'{label}' path '{ref}' resolves outside the plugin root")
+        elif not target.exists():
+            err(codex_json, f"'{label}' path '{ref}' does not exist")
 
 # --- 3: skill / agent / command frontmatter (single walk each) --------------
 

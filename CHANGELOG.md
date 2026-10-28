@@ -5,6 +5,26 @@ All notable changes to `milestone-designer` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-28
+
+**Theme:** Codex support. The plugin installs and runs on Codex with the same artifact contract and the same unskippable review checkpoint. Claude Code behavior is unchanged.
+
+### ✨ Added
+
+| Change | What |
+|---|---|
+| Codex manifest | `.codex-plugin/plugin.json` carries the Claude manifest's `name`, `version` and `description`, points `skills` at `./skills/`, and adds an `interface` block. No hooks. |
+| Codex runtime mapping | `skills/runtime-codex.md` maps agent dispatch (`spawn_agent` with a role-file brief, `wait_agent`, wireframer cap 4), setup invocation, file writes, and the Step 6 checkpoint. Both SKILL.md files resolve an unexpanded `${CLAUDE_PLUGIN_ROOT}` and point at it. |
+| Codex review gate | On Codex the checkpoint opens wireframes from the shell and asks through `request_user_input`. If that tool is not listed or returns no answer, the verdict is not approved: a 🔴 review-pending line prints, with no handoff. |
+| Codex DesignSync skip | Codex has no DesignSync tool. The push offer is skipped with one chat line, and the skip is not an adapter failure. |
+| Manifest gate | `scripts/validate-plugin-structure.py` requires `.codex-plugin/plugin.json`, holds its `name` / `version` / `description` equal to the Claude manifest's, and checks that every referenced path exists inside the plugin root. Eight new harness cases cover it. |
+
+### Consumer notes (upgrading from 0.2.2)
+
+- Claude Code: no behavior change.
+- Codex: `codex plugin marketplace add kenmulford/milestone-suite`, install from `/plugins`, invoke `$milestone-designer:design <brief>`. Notices and the handoff line print `$<plugin>:<skill>` mentions.
+- **No schema changes** to `.milestone-config/driver.json` or `designer.json`.
+
 ## [0.2.2] - 2026-10-27
 
 **Theme:** one bold run per paragraph in the design skill, its agents, and its contract docs, so the bold marks the clause that gates behavior.

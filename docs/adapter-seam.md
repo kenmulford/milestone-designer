@@ -48,6 +48,8 @@ Project targeting — pick once, remember. On a granted push, reuse `designSyncP
 
 Degrade taxonomy. Everything short of a completed push degrades silently to local-browser-only review and never fails the run (#Failure / degrade behavior): no login or missing scopes; DesignSync unreachable — at offer time, during the projectId lookup (the persisted id stays untouched), or mid-push after the grant; zero screens (the offer is skipped — nothing to push); the human declining either the permission prompt or the project picker; a malformed `designer.json`.
 
+Codex runtime. Codex has no DesignSync tool, so the offer is skipped and one line says so in chat (`skills/runtime-codex.md#DesignSync`). The skip is not an adapter failure, and `designSyncProjectId` is neither read nor written.
+
 ## Failure / degrade behavior
 
 **Adapter failures — DesignSync unavailable, or no claude.ai login — degrade gracefully to the local browser review path. They never fail the design run** (`.project/design-philosophy.md#Error & failure philosophy`, brief:64). A missing login is not a blocker: review still happens by opening the wireframes locally. The human review checkpoint itself cannot be skipped by any flag (`.project/design-philosophy.md#Error & failure philosophy`).
