@@ -34,14 +34,14 @@ Say this before doing any work:
 
 | # | Action |
 |---|---|
-| 1 | Resolve the **shared keys** `uiSurfaceGlobs` / `projectDocs` from the existing driver/feeder config (`.milestone-config/driver.json`, then `feeder.json`), absent-means-default (`projectDocs` → `.project/`). **Never duplicated into `designer.json`** (`skills/setup/SKILL.md` Non-negotiables). `uiSurfaceGlobs` unset → no surface can match; every screen is net-new (degrade, not error). |
-| 2 | Read the **consumer repo's** `design-system.md` **and** `tokens.json` (under `projectDocs`). |
-| 3 | **Gate — before any config write or dispatch.** `design-system.md` **or** `tokens.json` — **either absent, or present with every field `[TBD]`** → **exit immediately**, printing the verbatim no-UI-surface notice (fenced below). **No dispatch, no config write**; no partial `<designDocsDir>/<slug>/` tree and no `designer.json` bootstrap is left behind — the same skip rule the design-reviewer uses (`docs/milestone-designer-brief.md:22`; `agents/ux-architect.md` → "What you receive"; `docs/artifact-contract.md#No-UI-surface case`; `.project/design-system.md:5-6`). |
-| 4 | **Resolve `designer.json`** (only now, past the gate) — keys `designTool` / `designDocsDir` / `uxArchitectAgent` / `wireframerAgent`, absent-means-default (`.project/config-catalog.md#App config (per-environment)`). **Absent file → invoke `/milestone-designer:setup`** to bootstrap it, then continue — the user does not re-run the command (`skills/setup/SKILL.md` "When this runs" → Auto). Setup writes `designer.json` **only here, past the gate** — a gated exit at row 3 above leaves the tree untouched (row 3's own "No dispatch, no config write" rule). |
-| 5 | **`designTool` guard.** If `designTool` resolves to `pencil` / `figma` / `canva` (legal enum values, documented-contract-only in v1) → **halt** with a clear notice: that adapter has **no runtime dispatch in v1** — set `designTool` to `claude-design` or leave it unset (`docs/adapter-seam.md#v1 boundary`). This is a **deliberate-config halt**, distinct from the Step 6 adapter-failure degrade, which never halts. |
-| 6 | **Resolve the digests once.** Match `uiSurfaceGlobs` against the repo and read the matched surface files, plus `design-system.md` / `tokens.json` and the relevant sibling `.project/` docs, **once** into digests. Steps 2 and 4 pass **these** digests to the agents; agents never re-read directories (`agents/ux-architect.md` → "What you receive"; `agents/wireframer.md` → "What you receive"). |
+| 1 | Resolve the shared keys `uiSurfaceGlobs` / `projectDocs` from the existing driver/feeder config (`.milestone-config/driver.json`, then `feeder.json`), absent-means-default (`projectDocs` → `.project/`). **Never duplicated into `designer.json`** (`skills/setup/SKILL.md` Non-negotiables). `uiSurfaceGlobs` unset → no surface can match; every screen is net-new (degrade, not error). |
+| 2 | Read the consumer repo's `design-system.md` and `tokens.json` (under `projectDocs`). |
+| 3 | Gate — before any config write or dispatch. `design-system.md` or `tokens.json` — either absent, or present with every field `[TBD]` → **exit immediately**, printing the verbatim no-UI-surface notice (fenced below). No dispatch, no config write; no partial `<designDocsDir>/<slug>/` tree and no `designer.json` bootstrap is left behind — the same skip rule the design-reviewer uses (`docs/milestone-designer-brief.md:22`; `agents/ux-architect.md` → "What you receive"; `docs/artifact-contract.md#No-UI-surface case`; `.project/design-system.md:5-6`). |
+| 4 | Resolve `designer.json` (only now, past the gate) — keys `designTool` / `designDocsDir` / `uxArchitectAgent` / `wireframerAgent`, absent-means-default (`.project/config-catalog.md#App config (per-environment)`). Absent file → invoke `/milestone-designer:setup` to bootstrap it, then continue — the user does not re-run the command (`skills/setup/SKILL.md` "When this runs" → Auto). Setup writes `designer.json` **only here, past the gate** — a gated exit at row 3 above leaves the tree untouched (row 3's own "No dispatch, no config write" rule). |
+| 5 | `designTool` guard. If `designTool` resolves to `pencil` / `figma` / `canva` (legal enum values, documented-contract-only in v1) → **halt** with a clear notice: that adapter has no runtime dispatch in v1 — set `designTool` to `claude-design` or leave it unset (`docs/adapter-seam.md#v1 boundary`). This is a deliberate-config halt, distinct from the Step 6 adapter-failure degrade, which never halts. |
+| 6 | Resolve the digests once. Match `uiSurfaceGlobs` against the repo and read the matched surface files, plus `design-system.md` / `tokens.json` and the relevant sibling `.project/` docs, **once** into digests. Steps 2 and 4 pass these digests to the agents; agents never re-read directories (`agents/ux-architect.md` → "What you receive"; `agents/wireframer.md` → "What you receive"). |
 
-**No-UI-surface notice** — the canonical text Step 0's gate prints **verbatim**
+No-UI-surface notice — the canonical text Step 0's gate prints **verbatim**
 (the notice `docs/milestone-designer-brief.md:22` and
 `docs/artifact-contract.md#No-UI-surface case` reference):
 
@@ -110,7 +110,7 @@ Split every `UX_GAPS` entry by its `tag`, **before** Step 5 assembly:
 | Tag | Action |
 |---|---|
 | `design-resolvable` | Has a conventional default. Carry its `resolution` + `citation` into `spec.md`'s Gap resolutions at Step 5 (`docs/artifact-contract.md#spec.md structure`). Resolved inline **with** its citation — never parked. |
-| `product` | No conventional default. **Park** it — **never guessed** (`.project/design-philosophy.md#What we optimize for` — park-don't-guess). |
+| `product` | No conventional default. **Park** it — never guessed (`.project/design-philosophy.md#What we optimize for` — park-don't-guess). |
 
 **Fold a resolved gap back into the working inventory.** When a `design-resolvable`
 gap is resolved with its citation, **also update the affected screen's `STATES`
@@ -161,9 +161,9 @@ Brief each with (matches `agents/wireframer.md` → "What you receive"):
   "What you receive").
 
 Collect each structured return (`SCREEN` + the `WIREFRAME` HTML document).
-**Before Step 5 writes, validate completeness:** **every** `SCREENS` entry must
-have **exactly one** returned block whose `SCREEN` echoes the entry name
-**verbatim** and carries a **non-empty** `WIREFRAME`. Any missing, name-mismatched,
+Before Step 5 writes, validate completeness: every `SCREENS` entry must
+have exactly one returned block whose `SCREEN` echoes the entry name
+verbatim and carries a non-empty `WIREFRAME`. Any missing, name-mismatched,
 duplicate, or malformed (empty-`WIREFRAME`) return → **halt-and-report**, naming
 the offending screen(s) (see Failure handling).
 
@@ -187,13 +187,13 @@ Write the artifact set to `<designDocsDir>/<slug>/` per
 
 - `<root>/spec.md`;
 - `<root>/screens/<screen-slug>.html` — one per `SCREENS` entry, the returned
-  `WIREFRAME` HTML. `<screen-slug>` is the `SCREEN` name run through the **same
-  transformation as `<slug>`** (lowercase; every run of non-alphanumeric
+  `WIREFRAME` HTML. `<screen-slug>` is the `SCREEN` name run through the same
+  transformation as `<slug>` (lowercase; every run of non-alphanumeric
   characters → a single hyphen; strip leading/trailing hyphens —
   `.project/conventions.md#Naming`), and `SCREEN` echoes the entry name verbatim
   so the mapping is unambiguous (`agents/wireframer.md` → "Structured return block").
-  **Screen-slug collision** — two `SCREENS` entries whose names transform to the
-  **same** `<screen-slug>` → **halt-and-report**, naming **both** entries; never
+  Screen-slug collision — two `SCREENS` entries whose names transform to the
+  same `<screen-slug>` → **halt-and-report**, naming both entries; never
   silently overwrite one wireframe with another.
 
 Under `claude-design` (the only v1 adapter) the wireframe format is HTML →
@@ -209,39 +209,39 @@ first-run plain write (`docs/artifact-contract.md#Idempotent re-runs`).
 
 ### Step 6 — Local review checkpoint (never skipped)
 
-Open the wireframes in the **local browser** and **BLOCK on human approval**.
+Open the wireframes in the local browser and BLOCK on human approval.
 This checkpoint is **never skipped by any flag, config key, env var, or
 non-interactive / CI invocation** (`.milestone-config/driver.json#nonNegotiables`;
 `.project/design-philosophy.md#Error & failure philosophy`).
 
-**On a re-run** the checkpoint opens the **held** wireframes (per-screen diffs;
+On a re-run the checkpoint opens the held wireframes (per-screen diffs;
 "no changes" if unchanged), never the committed files. **Approved** writes the
-held changes (screens + `spec.md`) **before** the handoff; **Rejected** discards
+held changes (screens + `spec.md`) before the handoff; Rejected discards
 them, artifacts untouched (`docs/artifact-contract.md#Idempotent re-runs`).
 
 | Outcome | Behavior |
 |---|---|
-| **Approved** | If any product gaps were parked, **first** print a 🔴 outstanding-needs-input line — the **count** + the `needs-input-<slug>.md` path — so the parks stay visible; **then** print the handoff line, verbatim: `/milestone-feeder:plan <brief>`. |
-| **Rejected** | Artifacts **stay in place**; print **no** handoff line; the human fixes the brief/docs and **re-runs** `design`. |
+| Approved | If any product gaps were parked, **first** print a 🔴 outstanding-needs-input line — the count + the `needs-input-<slug>.md` path — so the parks stay visible; then print the handoff line, verbatim: `/milestone-feeder:plan <brief>`. |
+| Rejected | Artifacts stay in place; print **no** handoff line; the human fixes the brief/docs and re-runs `design`. |
 
-**Optional DesignSync push** (`claude-design` only). Offer it **with** the
+Optional DesignSync push (`claude-design` only). Offer it with the
 local review, before the verdict, when a claude.ai login with design
 scopes exists and the run produced ≥1 screen — **permission-gated, per-plan**. On
 grant, push each screen as a card grouped by `<slug>`, targeting
-`designer.json`'s **pick-once-remembered** `designSyncProjectId`. Payload,
+`designer.json`'s pick-once-remembered `designSyncProjectId`. Payload,
 `@dsCard` marker (uploaded copies only), picker, persistence, and the
 malformed-`designer.json` rule live in
-`docs/adapter-seam.md#DesignSync push mechanics (claude-design)` — **never**
+`docs/adapter-seam.md#DesignSync push mechanics (claude-design)` — never
 `/milestone-designer:setup`. Any miss, decline, or failure degrades silently to
-local-only; the outcome threads into the **same** approval path (no duplicate
+local-only; the outcome threads into the same approval path (no duplicate
 handoff) (`docs/adapter-seam.md#Failure / degrade behavior`).
 
 ## Failure handling
 
-A **ux-architect (Step 2) or wireframer (Step 4) dispatch failure**, a
-**Step 4→5 completeness failure** (Step 4), a **screen-slug collision** (Step 5),
-or a re-run's **unreadable existing artifact file** (Step 5) → **halt** naming
-**which** dispatch or screen(s)/**file** failed; write **no partial artifact set**
+A ux-architect (Step 2) or wireframer (Step 4) dispatch failure, a
+Step 4→5 completeness failure (Step 4), a screen-slug collision (Step 5),
+or a re-run's unreadable existing artifact file (Step 5) → **halt** naming
+which dispatch or screen(s)/file failed; write no partial artifact set
 (fail-closed). The dispatch, completeness, and collision halts are the skill's own
 rule; the unreadable-artifact halt grounds in the
 philosophy-owned invariant (`.project/design-philosophy.md#Error & failure philosophy`).
