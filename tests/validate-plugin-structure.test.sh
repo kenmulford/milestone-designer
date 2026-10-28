@@ -57,14 +57,19 @@ fi
 lib_make_tmproot
 
 # mk_fixture -> a fresh fixture plugin root with the validator copied in and VALID
-# baseline manifests (plugin.json carries version+description so no WARN noise).
+# baseline manifests (plugin.json carries version+description so no WARN noise;
+# the Codex manifest mirrors its name/version/description and references no
+# paths, so a fixture with no skills/ dir stays valid).
 # Cases add skills/agents or overwrite a manifest as needed.
 mk_fixture() {
   local d
   d="$(mktemp -d "$TMP_ROOT/fix.XXXXXX")"
-  mkdir -p "$d/scripts" "$d/.claude-plugin"
+  mkdir -p "$d/scripts" "$d/.claude-plugin" "$d/.codex-plugin"
   cp "$VALIDATOR" "$d/scripts/validate-plugin-structure.py"
   cat > "$d/.claude-plugin/plugin.json" <<'JSON'
+{ "name": "fixture-plugin", "version": "0.0.1", "description": "fixture plugin" }
+JSON
+  cat > "$d/.codex-plugin/plugin.json" <<'JSON'
 { "name": "fixture-plugin", "version": "0.0.1", "description": "fixture plugin" }
 JSON
   cat > "$d/.claude-plugin/marketplace.json" <<'JSON'
@@ -237,12 +242,112 @@ assert_contains "invalid JSON names the defect" "$OUT" "is not valid JSON"
 
 # --- Case 12: zero-skills repo (exit 0, only manifests checked) --------------
 # AC2: a fixture with valid manifests and NO skills/ dir stays green and counts
-# only the two manifests — the validator's rglob over a non-existent skills/ dir
-# yields nothing (no error).
+# only the three manifests — the validator's rglob over a non-existent skills/
+# dir yields nothing (no error).
 fix="$(mk_fixture)"
 run_validator "$fix"
 assert_exit "zero-skills repo -> exit 0" 0 "$CODE"
-assert_contains "zero-skills checks only the 2 manifests" "$OUT" "2 file(s) checked"
+assert_contains "zero-skills checks only the 3 manifests" "$OUT" "3 file(s) checked"
+
+# --- Case 13: Codex manifest absent (exit 1) ---------------------------------
+fix="$(mk_fixture)"
+rm "$fix/.codex-plugin/plugin.json"
+run_validator "$fix"
+assert_exit "absent Codex manifest -> exit 1" 1 "$CODE"
+assert_contains "absent Codex manifest names the defect" "$OUT" "required manifest is missing"
+
+# --- Case 14: Codex manifest version drifts from the Claude manifest ---------
+fix="$(mk_fixture)"
+write_file "$fix/.codex-plugin/plugin.json" <<'EOF'
+{ "name": "fixture-plugin", "version": "0.0.2", "description": "fixture plugin" }
+EOF
+run_validator "$fix"
+assert_exit "Codex version drift -> exit 1" 1 "$CODE"
+assert_contains "version drift names the key" "$OUT" "'version' is '0.0.2' but .claude-plugin/plugin.json has '0.0.1'"
+
+# --- Case 15: Codex manifest name/description drift --------------------------
+fix="$(mk_fixture)"
+write_file "$fix/.codex-plugin/plugin.json" <<'EOF'
+{ "name": "other-plugin", "version": "0.0.1", "description": "other" }
+EOF
+run_validator "$fix"
+assert_exit "Codex name/description drift -> exit 1" 1 "$CODE"
+assert_contains "name drift names the key" "$OUT" "'name' is 'other-plugin'"
+assert_contains "description drift names the key" "$OUT" "'description' is 'other'"
+
+# --- Case 16: Codex manifest references a path that does not exist -----------
+fix="$(mk_fixture)"
+write_file "$fix/.codex-plugin/plugin.json" <<'EOF'
+{ "name": "fixture-plugin", "version": "0.0.1", "description": "fixture plugin",
+  "skills": "./skills/", "hooks": "./hooks/codex-hooks.json" }
+EOF
+run_validator "$fix"
+assert_exit "missing referenced paths -> exit 1" 1 "$CODE"
+assert_contains "missing skills path is named" "$OUT" "'skills' path './skills/' does not exist"
+assert_contains "missing hooks path is named" "$OUT" "'hooks' path './hooks/codex-hooks.json' does not exist"
+
+# --- Case 17: Codex manifest path escapes the plugin root --------------------
+fix="$(mk_fixture)"
+write_file "$fix/.codex-plugin/plugin.json" <<'EOF'
+{ "name": "fixture-plugin", "version": "0.0.1", "description": "fixture plugin",
+  "skills": "../" }
+EOF
+run_validator "$fix"
+assert_exit "path outside the plugin root -> exit 1" 1 "$CODE"
+assert_contains "escaping path is named" "$OUT" "'skills' path '../' resolves outside the plugin root"
+
+# --- Case 18: Codex manifest with existing skills + interface asset paths ----
+fix="$(mk_fixture)"
+write_file "$fix/skills/valid/SKILL.md" <<'EOF'
+---
+name: valid
+description: A valid description.
+---
+Body text.
+EOF
+write_file "$fix/assets/icon.svg" <<'EOF'
+<svg xmlns="http://www.w3.org/2000/svg"/>
+EOF
+write_file "$fix/.codex-plugin/plugin.json" <<'EOF'
+{ "name": "fixture-plugin", "version": "0.0.1", "description": "fixture plugin",
+  "skills": "./skills/",
+  "interface": { "displayName": "Fixture", "category": "Productivity",
+                 "composerIcon": "./assets/icon.svg", "logo": "./assets/missing.svg" } }
+EOF
+run_validator "$fix"
+assert_exit "missing interface asset -> exit 1" 1 "$CODE"
+assert_contains "missing interface asset is named" "$OUT" "'interface.logo' path './assets/missing.svg' does not exist"
+write_file "$fix/.codex-plugin/plugin.json" <<'EOF'
+{ "name": "fixture-plugin", "version": "0.0.1", "description": "fixture plugin",
+  "skills": "./skills/",
+  "interface": { "displayName": "Fixture", "category": "Productivity",
+                 "composerIcon": "./assets/icon.svg", "logo": "./assets/icon.svg" } }
+EOF
+run_validator "$fix"
+assert_exit "valid Codex manifest with paths -> exit 0" 0 "$CODE"
+assert_contains "valid Codex manifest reports PASS" "$OUT" "PASS: plugin structure valid"
+
+# --- Case 19: list-valued hooks are checked per entry -------------------------
+fix="$(mk_fixture)"
+write_file "$fix/hooks/a.json" <<'EOF'
+{}
+EOF
+write_file "$fix/.codex-plugin/plugin.json" <<'EOF'
+{ "name": "fixture-plugin", "version": "0.0.1", "description": "fixture plugin",
+  "hooks": [ "./hooks/a.json", "./hooks/b.json" ] }
+EOF
+run_validator "$fix"
+assert_exit "missing entry in a hooks list -> exit 1" 1 "$CODE"
+assert_contains "missing hooks list entry is named" "$OUT" "'hooks' path './hooks/b.json' does not exist"
+
+# --- Case 20: invalid Claude manifest reports no Codex drift -----------------
+fix="$(mk_fixture)"
+write_file "$fix/.claude-plugin/plugin.json" <<'EOF'
+{ "name": "fixture-plugin", }
+EOF
+run_validator "$fix"
+assert_exit "invalid Claude manifest -> exit 1" 1 "$CODE"
+assert_contains "invalid Claude manifest reports one problem" "$OUT" "(1 problem(s))"
 
 # --- summary -----------------------------------------------------------------
 lib_finish "validate-plugin-structure.test.sh"
