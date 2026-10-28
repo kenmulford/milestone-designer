@@ -5,22 +5,22 @@ Project doc (.project/). Cite as `.project/config-catalog.md#<section>`. A norms
 project's configuration & secrets — the analog of `.env.example` / an `appsettings.template.*`.
 It records the *shape* of every config/secret key so downstream tools build config, secrets, and
 CORS correctly the first time. For each entry record: **key name · source bucket · format/shape ·
-environment(s) · required?** — and NEVER a secret value. Non-secret config facts a builder needs
+environment(s) · required?**, and never a secret value. Non-secret config facts a builder needs
 verbatim (CORS origin URLs, the sender/from address, the JWT issuer/audience) ARE recorded here as
-norms; secret material (signing keys, passwords, API-key strings) is NEVER recorded — name the
+norms; secret material (signing keys, passwords, API-key strings) is never recorded: name the
 bucket it lives in and leave the value out. Fill every [TBD]; a section left [TBD] is treated as
 "not specified." Humans own this file; tools propose, never rewrite. Keep the ## headings stable —
 they are citation anchors. Add rows to a table; never rename a heading.
 -->
 
 ## Connection strings
-DB and service connection strings the app needs, **including the local-dev DB engine** — SQL Server LocalDB, a Docker SQL container, or a dev cloud DB. The F5/local-dev target is the single most-missed entry. Record the key name and its shape; **never the value** (a connection string's password is secret).
+DB and service connection strings the app needs, including the local-dev DB engine: SQL Server LocalDB, a Docker SQL container, or a dev cloud DB. The F5/local-dev target is the single most-missed entry. Record the key name and its shape; **never the value** (a connection string's password is secret).
 | Key | Source bucket | Format / shape | Environment(s) | Required? |
 |---|---|---|---|---|
 | _None — no databases or connected services_ | — | — | — | — |
 
 ## Auth / JWT
-The **full** auth/JWT key set — signing key, issuer, AND audience — not just the signing key. Issuer and audience are non-secret identifiers and ARE recorded; the signing key's value is secret and is NEVER recorded.
+The **full** auth/JWT key set (signing key, issuer, and audience), not just the signing key. Issuer and audience are non-secret identifiers and ARE recorded; the signing key's value is secret and is never recorded.
 | Key | Source bucket | Format / shape | Environment(s) | Required? |
 |---|---|---|---|---|
 | _None — DesignSync rides the session's claude.ai login; no stored credential, no key set_ | — | — | — | — |
