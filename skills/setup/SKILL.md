@@ -39,8 +39,8 @@ in `.project/config-catalog.md#App config (per-environment)`.
 | `wireframerAgent` | `milestone-designer:wireframer` |
 | `designSyncProjectId` | _none — written at push time by `design`, never by setup_ |
 
-Full happy-path file the **Absent** branch writes **verbatim** on a fresh
-install (the four **defaulted** keys above, at their defaults):
+Full happy-path file the Absent branch writes **verbatim** on a fresh
+install (the four defaulted keys above, at their defaults):
 
 ```json
 {
@@ -70,10 +70,10 @@ on its state.
 
 | State | Behavior |
 |---|---|
-| **Absent** (no file, `.milestone-config/` may also be absent) | Create the dir if needed, then write the four defaulted keys at the table's defaults — the **verbatim** JSON above. **Never** write `designSyncProjectId` (no default; the `design` push adds it later). |
-| **Malformed** — file exists but does not parse as JSON | Make **no writes**. Report 🔴 with the parse problem and ask the human to fix or delete the file. Never rewrite or clobber a hand-edited file (`.project/design-philosophy.md#Error & failure philosophy`). |
-| **Complete** — all four defaulted keys present | Make **no changes** (non-destructive re-run). Report the current values back to the user. Never silently overwrite a complete config (`.project/design-philosophy.md#Error & failure philosophy`, `#One-way doors` — repo files are canonical). A present `designSyncProjectId` is left untouched; its presence/absence never affects completeness. |
-| **Partial** — some of the four defaulted keys missing (hand-edited, or an older schema) | Fill **only** the missing defaulted keys with their documented defaults from the table. `designSyncProjectId` is never filled (it has no default). Leave every already-present key's value **untouched** — do not rewrite the whole file. Each key defaults independently. |
+| Absent (no file, `.milestone-config/` may also be absent) | Create the dir if needed, then write the four defaulted keys at the table's defaults — the verbatim JSON above. **Never** write `designSyncProjectId` (no default; the `design` push adds it later). |
+| Malformed — file exists but does not parse as JSON | Make **no writes**. Report 🔴 with the parse problem and ask the human to fix or delete the file. Never rewrite or clobber a hand-edited file (`.project/design-philosophy.md#Error & failure philosophy`). |
+| Complete — all four defaulted keys present | Make **no changes** (non-destructive re-run). Report the current values back to the user. Never silently overwrite a complete config (`.project/design-philosophy.md#Error & failure philosophy`, `#One-way doors` — repo files are canonical). A present `designSyncProjectId` is left untouched; its presence/absence never affects completeness. |
+| Partial — some of the four defaulted keys missing (hand-edited, or an older schema) | Fill **only** the missing defaulted keys with their documented defaults from the table. `designSyncProjectId` is never filled (it has no default). Leave every already-present key's value untouched — do not rewrite the whole file. Each key defaults independently. |
 
 **Never overwrite a present key's value.** In the partial case, a key the user
 set to a non-default value (e.g. `"designTool": "figma"`) stays as they set it;
