@@ -209,9 +209,9 @@ first-run plain write (`docs/artifact-contract.md#Idempotent re-runs`).
 
 ### Step 6 — Local review checkpoint (never skipped)
 
-Open the wireframes in the local browser and BLOCK on human approval.
-This checkpoint is **never skipped by any flag, config key, env var, or
-non-interactive / CI invocation** (`.milestone-config/driver.json#nonNegotiables`;
+Open the wireframes in the local browser and **BLOCK on human approval**.
+This checkpoint is never skipped by any flag, config key, env var, or
+non-interactive / CI invocation (`.milestone-config/driver.json#nonNegotiables`;
 `.project/design-philosophy.md#Error & failure philosophy`).
 
 On a re-run the checkpoint opens the held wireframes (per-screen diffs;
